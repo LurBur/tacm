@@ -1,0 +1,34 @@
+name: TACM public crypto research snapshots
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '12 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: tacm-market-snapshots
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check Python controller, risk gate and parsing tests
+        run: python -m unittest discover -s crypto-governor/tests -v
+      - name: Generate PUBLIC market snapshots without API keys
+        run: python crypto-governor/update_market.py --out docs/crypto-governor/data
+      - name: Update repository data (no trading secrets)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/crypto-governor/data/BTCUSD.json docs/crypto-governor/data/ETHUSD.json docs/crypto-governor/data/manifest.json 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: refresh public hourly paper research snapshots'
+            git push
+          fi
