@@ -1,0 +1,10 @@
+{
+  "updated_at": "2026-10-15T22:21:26.933856+00:00",
+  "assets": [
+    "BTCUSD",
+    "ETHUSD"
+  ],
+  "errors": {},
+  "mode": "market",
+  "refresh_interval_seconds": 3600
+}
