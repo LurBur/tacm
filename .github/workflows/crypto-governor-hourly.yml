@@ -1,6 +1,10 @@
 name: TACM public crypto research snapshots
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/crypto-governor-hourly.yml'
   schedule:
     - cron: '12 * * * *'
 permissions:
