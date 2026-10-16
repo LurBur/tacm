@@ -21,8 +21,8 @@ from urllib.request import Request, urlopen
 from supervisor_lab import RiskGate, load_bars, standard_agents
 from governor import Observation, Proposal, TrigunaGovernor
 
-VARIANTS = ("plain", "simple_vol_guard", "tacm_full", "tacm_no_tamas",
-            "cash", "passive_10pct")
+VARIANTS = ("plain", "plain_3pct", "simple_vol_guard", "tacm_full",
+            "tacm_no_tamas", "cash", "passive_10pct", "passive_3pct")
 SECONDS = 3600
 
 
@@ -203,15 +203,15 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
         midpoint = (bid + ask) / 2
         equity_before = p["cash"] + p["units"] * midpoint
         p["peak"] = max(p["peak"], equity_before)
-        target = .1 * chosen.target
+        target = (.03 if name == "plain_3pct" else .10) * chosen.target
         agent = chosen.agent
         if name == "simple_vol_guard" and ratio >= 2:
             target = 0.0
         if name == "cash":
             target = 0.0
-        if name == "passive_10pct":
-            # Exactly one purchase, never continuous rebalancing.
-            target = .1 if p["observations"] == 0 else (
+        if name in ("passive_10pct", "passive_3pct"):
+            # Fixed 10% or 3% initial purchase, never continuous rebalancing.
+            target = (.10 if name == "passive_10pct" else .03) if p["observations"] == 0 else (
                 p["units"] * midpoint / equity_before)
         if name.startswith("tacm_") and skipped_hours == 0:
             variant = "full" if name == "tacm_full" else "no_tamas"
@@ -222,9 +222,9 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
             decision = gov.decide(observation, proposals)
             target, agent = decision.target_weight, decision.selected_agent
             state["governors"][name] = save_governor(gov)
-        if skipped_hours and name not in ("cash", "passive_10pct"):
+        if skipped_hours and name not in ("cash", "passive_10pct", "passive_3pct"):
             target = 0.0  # fail-safe re-entry pause; no fabricated missed-hour fills
-        if name in ("cash", "passive_10pct"):
+        if name in ("cash", "passive_10pct", "passive_3pct"):
             allowed, reason = target, "reference"
         else:
             gate = RiskGate()
@@ -237,7 +237,7 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
             p["gate"] = dict(gate.__dict__)
             if p["gate"]["day"] is not None:
                 p["gate"]["day"] = p["gate"]["day"].isoformat()
-        if skipped_hours and name not in ("cash", "passive_10pct"):
+        if skipped_hours and name not in ("cash", "passive_10pct", "passive_3pct"):
             reason = "missed_interval_flatten_at_observed_quote"
         fill = paper_fill(p, allowed, reason, bid, ask, fee, slippage)
         decisions[name] = {"agent": agent, "requested": target,
