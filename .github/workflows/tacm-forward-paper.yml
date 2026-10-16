@@ -1,0 +1,66 @@
+name: TACM forward paper ledger (public quotes, zero orders)
+on:
+  workflow_run:
+    workflows:
+      - TACM public crypto research snapshots
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tacm-forward-paper-ledger
+  cancel-in-progress: false
+
+jobs:
+  observe-paper:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify isolated paper suite before observing
+        run: python -m unittest discover -s crypto-governor/tests -v
+      - name: Observe BTC and ETH independently using current public quotes
+        shell: bash
+        run: |
+          set +e
+          failures=0
+          for pair in BTCUSD ETHUSD; do
+            python crypto-governor/forward_paper.py \
+              --symbol "$pair" \
+              --snapshot "docs/crypto-governor/data/$pair.json" \
+              --state "docs/crypto-governor/forward/$pair.state.json" \
+              --journal "docs/crypto-governor/forward/$pair.ledger.jsonl" \
+              --fee 0.008 --slippage 0.0005
+            if [ $? -ne 0 ]; then
+              echo "::warning::PAPER $pair observation rejected; fail closed for this market"
+              failures=$((failures+1))
+            fi
+          done
+          echo "$failures" > /tmp/tacm-forward-failures
+      - name: Commit paper observations if and only if files changed
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/crypto-governor/forward/ || true
+          if ! git diff --cached --quiet; then
+            git commit -m 'paper: append public quote observations (no real orders)'
+            git push
+          fi
+      - name: Alert on rejected observations
+        shell: bash
+        run: |
+          failures=$(cat /tmp/tacm-forward-failures)
+          if [ "$failures" -ne 0 ]; then
+            echo "::error::$failures paper streams failed; no missed history was backfilled"
+            exit 1
+          fi
