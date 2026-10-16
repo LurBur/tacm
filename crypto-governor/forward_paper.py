@@ -155,6 +155,7 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
         raise ValueError("Invalid paper settings")
     candle_open, observed, bid, ask = validate_inputs(snapshot, quote, now, symbol)
     bars = load_bars_from_snapshot(snapshot)
+    skipped_hours = 0
     if previous is None:
         state = initial_state(symbol, capital, fee, slippage, now)
     else:
@@ -169,8 +170,11 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
         diff = (candle_open - previous_open).total_seconds()
         if diff == 0:
             return state, None
-        if diff != SECONDS:
+        if diff < SECONDS or diff % SECONDS != 0:
             raise ValueError("Missing or reordered paper interval; fail closed")
+        # A late GitHub job is not evidence of market decisions in skipped hours.
+        # At the first new observation, flatten active paper portfolios and log it.
+        skipped_hours = int(diff / SECONDS) - 1
         if observed <= utc(state["started_at"]):
             raise ValueError("Quote predates initialization")
         if state.get("last_quote_at") and observed <= utc(state["last_quote_at"]):
@@ -178,7 +182,7 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
     signals = standard_agents(bars)
     signal_map = {s.agent: s.target for s in signals}
     closes = [b.close for b in bars]
-    if state["last_close"] is not None:
+    if state["last_close"] is not None and skipped_hours == 0:
         change = closes[-1] / state["last_close"] - 1
         for name in state["shadow"]:
             prev = state["last_signals"][name]
@@ -209,7 +213,7 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
             # Exactly one purchase, never continuous rebalancing.
             target = .1 if p["observations"] == 0 else (
                 p["units"] * midpoint / equity_before)
-        if name.startswith("tacm_"):
+        if name.startswith("tacm_") and skipped_hours == 0:
             variant = "full" if name == "tacm_full" else "no_tamas"
             gov = restore_governor(variant, state["governors"].get(name))
             observation = Observation(observed, tuple(b.open for b in bars),
@@ -218,6 +222,8 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
             decision = gov.decide(observation, proposals)
             target, agent = decision.target_weight, decision.selected_agent
             state["governors"][name] = save_governor(gov)
+        if skipped_hours and name not in ("cash", "passive_10pct"):
+            target = 0.0  # fail-safe re-entry pause; no fabricated missed-hour fills
         if name in ("cash", "passive_10pct"):
             allowed, reason = target, "reference"
         else:
@@ -231,6 +237,8 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
             p["gate"] = dict(gate.__dict__)
             if p["gate"]["day"] is not None:
                 p["gate"]["day"] = p["gate"]["day"].isoformat()
+        if skipped_hours and name not in ("cash", "passive_10pct"):
+            reason = "missed_interval_flatten_at_observed_quote"
         fill = paper_fill(p, allowed, reason, bid, ask, fee, slippage)
         decisions[name] = {"agent": agent, "requested": target,
                            "allowed": allowed, **fill}
@@ -241,7 +249,8 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
         "bar_close": closes[-1], "bid": bid, "ask": ask,
         "signals": {s.agent: {"target": s.target, "confidence": s.confidence,
                               "evidence": s.evidence} for s in signals},
-        "volatility_ratio": ratio, "decisions": decisions,
+        "volatility_ratio": ratio, "skipped_unobserved_hours": skipped_hours,
+        "decisions": decisions,
         "prev_hash": state["last_hash"], "number": state["events"] + 1
     }
     event["hash"] = hashlib.sha256(canonical(event).encode()).hexdigest()
