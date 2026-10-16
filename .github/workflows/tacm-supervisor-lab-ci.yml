@@ -4,6 +4,9 @@ on:
     paths:
       - 'crypto-governor/supervisor_lab.py'
       - 'crypto-governor/tests/test_supervisor_lab.py'
+      - 'crypto-governor/tests/test_forward_paper.py'
+      - 'crypto-governor/forward_paper.py'
+      - '.github/workflows/tacm-forward-paper.yml'
       - 'crypto-governor/SUPERVISOR_LAB.md'
       - '.github/workflows/tacm-supervisor-lab-ci.yml'
   workflow_dispatch:
