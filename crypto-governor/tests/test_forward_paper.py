@@ -40,7 +40,9 @@ class ForwardPaperTests(unittest.TestCase):
         self.assertEqual(state["events"], 1)
         self.assertEqual(state["last_hash"], event["hash"])
         self.assertEqual(event["prev_hash"], "GENESIS")
-        self.assertEqual(len(event["decisions"]), 6)
+        self.assertLessEqual(event["decisions"]["plain_3pct"]["requested"], .03)
+        self.assertLessEqual(event["decisions"]["passive_3pct"]["requested"], .03)
+        self.assertEqual(len(event["decisions"]), 8)
         self.assertEqual(state["mode"], "FORWARD_PAPER_ONLY")
         self.assertTrue(all(0 <= d["allowed"] <= .100000001
                             for name, d in event["decisions"].items()
@@ -72,7 +74,7 @@ class ForwardPaperTests(unittest.TestCase):
                                     now=later_now, symbol="BTCUSD")
         self.assertEqual(event["skipped_unobserved_hours"], 1)
         self.assertEqual(next_state["events"], 2)
-        for name in ("plain", "simple_vol_guard", "tacm_full", "tacm_no_tamas"):
+        for name in ("plain", "plain_3pct", "simple_vol_guard", "tacm_full", "tacm_no_tamas"):
             self.assertAlmostEqual(next_state["portfolios"][name]["units"], 0.0)
             self.assertEqual(event["decisions"][name]["gate"],
                              "missed_interval_flatten_at_observed_quote")
