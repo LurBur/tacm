@@ -105,7 +105,7 @@ def paper_fill(p, allowed, gate_name, bid, ask, fee, slip):
     existing = p["units"] * midpoint
     action, qty, cost = "hold", 0.0, 0.0
     delta = allowed * pre_equity - existing
-    if abs(delta) >= pre_equity * .005:
+    if abs(delta) >= pre_equity * .005 or (allowed == 0.0 and p["units"] > 1e-12):
         if delta > 0:
             fill_price = ask * (1 + slip)
             qty = min(delta / fill_price, p["cash"] / (fill_price * (1 + fee)))
