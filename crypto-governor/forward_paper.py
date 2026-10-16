@@ -12,7 +12,7 @@ import json
 import os
 import tempfile
 from collections import deque
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from math import isfinite
 from pathlib import Path
 from statistics import mean, pstdev
@@ -53,7 +53,7 @@ def initial_state(symbol, capital, fee, slippage, now):
             "governors": {}, "shadow": {k: [] for k in
                       ("momentum_12_48", "mean_revert_z24")},
             "last_signals": None, "before_last_signals": None,
-            "last_close": None, "events": 0}
+            "last_close": None, "last_quote_at": None, "events": 0}
 
 
 def restore_governor(variant, obj):
@@ -173,6 +173,8 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
             raise ValueError("Missing or reordered paper interval; fail closed")
         if observed <= utc(state["started_at"]):
             raise ValueError("Quote predates initialization")
+        if state.get("last_quote_at") and observed <= utc(state["last_quote_at"]):
+            raise ValueError("Non-monotonic quote time; refuse replay")
     signals = standard_agents(bars)
     signal_map = {s.agent: s.target for s in signals}
     closes = [b.close for b in bars]
@@ -221,10 +223,14 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
         else:
             gate = RiskGate()
             gate.__dict__.update(p["gate"])
+            if isinstance(gate.day, str):
+                gate.day = date.fromisoformat(gate.day)
             weight = p["units"] * midpoint / equity_before
             allowed, reason = gate.allow(target, equity_before, p["peak"],
                                          observed, weight)
             p["gate"] = dict(gate.__dict__)
+            if p["gate"]["day"] is not None:
+                p["gate"]["day"] = p["gate"]["day"].isoformat()
         fill = paper_fill(p, allowed, reason, bid, ask, fee, slippage)
         decisions[name] = {"agent": agent, "requested": target,
                            "allowed": allowed, **fill}
@@ -245,6 +251,7 @@ def advance(snapshot, quote, previous, *, now, symbol, fee=.008,
     state["before_last_signals"] = state["last_signals"]
     state["last_signals"] = signal_map
     state["last_close"] = closes[-1]
+    state["last_quote_at"] = observed.isoformat()
     return state, event
 
 
@@ -292,6 +299,15 @@ def save_step(state_path, journal_path, state, event):
     state_path, journal_path = Path(state_path), Path(journal_path)
     history = journal_path.read_text(encoding="utf-8") if journal_path.exists() else ""
     rows = [json.loads(x) for x in history.splitlines() if x.strip()]
+    # Verify the complete public hash chain, not merely the last checkpoint.
+    last = "GENESIS"
+    for index, recorded in enumerate(rows, start=1):
+        item = dict(recorded)
+        recorded_hash = item.pop("hash", None)
+        digest = hashlib.sha256(canonical(item).encode()).hexdigest()
+        if item.get("prev_hash") != last or item.get("number") != index or digest != recorded_hash:
+            raise ValueError("Paper journal integrity/hash chain failure")
+        last = recorded_hash
     old = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else None
     if (old is None and rows) or (old is not None and
         (not rows or rows[-1]["hash"] != old["last_hash"] or
