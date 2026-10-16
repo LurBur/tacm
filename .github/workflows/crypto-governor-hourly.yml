@@ -1,4 +1,5 @@
 name: TACM public crypto research snapshots
+# Successful completion now triggers the separate paper-only forward observer.
 on:
   workflow_dispatch:
   push:
