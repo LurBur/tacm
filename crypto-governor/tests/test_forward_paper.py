@@ -64,12 +64,18 @@ class ForwardPaperTests(unittest.TestCase):
         self.assertEqual(s2["governors"]["tacm_full"]["bar_index"], 2)
         self.assertEqual(ev2["decisions"]["cash"]["equity"], 10000.0)
 
-    def test_missing_hour_fails_closed(self):
+    def test_missing_hour_records_gap_and_flattens_not_backfills(self):
         snap, quote, now = fixture()
         state, _ = advance(snap, quote, None, now=now, symbol="BTCUSD")
         missed, later_quote, later_now = fixture(132)
-        with self.assertRaisesRegex(ValueError, "Missing or reordered"):
-            advance(missed, later_quote, state, now=later_now, symbol="BTCUSD")
+        next_state, event = advance(missed, later_quote, state,
+                                    now=later_now, symbol="BTCUSD")
+        self.assertEqual(event["skipped_unobserved_hours"], 1)
+        self.assertEqual(next_state["events"], 2)
+        for name in ("plain", "simple_vol_guard", "tacm_full", "tacm_no_tamas"):
+            self.assertAlmostEqual(next_state["portfolios"][name]["units"], 0.0)
+            self.assertEqual(event["decisions"][name]["gate"],
+                             "missed_interval_flatten_at_observed_quote")
 
     def test_stale_and_unauthenticated_prices_rejected(self):
         snap, quote, now = fixture()
@@ -114,6 +120,21 @@ class ForwardPaperTests(unittest.TestCase):
             save_step(path, journal, state2, event2)
             self.assertEqual(len(journal.read_text().splitlines()), 2)
             with self.assertRaisesRegex(ValueError, "hash chain"):
+                save_step(path, journal, state2, event2)
+
+    def test_corrupted_prior_journal_row_rejected(self):
+        snap, quote, now = fixture()
+        state, event = advance(snap, quote, None, now=now, symbol="BTCUSD")
+        with tempfile.TemporaryDirectory() as d:
+            path, journal = Path(d)/"state.json", Path(d)/"journal.jsonl"
+            save_step(path, journal, state, event)
+            tampered = json.loads(journal.read_text())
+            tampered["bid"] = 1.0
+            journal.write_text(json.dumps(tampered)+"\n")
+            snap2, quote2, now2 = fixture(131)
+            state2, event2 = advance(snap2, quote2, state,
+                                      now=now2, symbol="BTCUSD")
+            with self.assertRaisesRegex(ValueError, "integrity/hash chain"):
                 save_step(path, journal, state2, event2)
 
     def test_quote_timestamp_must_be_causal(self):
