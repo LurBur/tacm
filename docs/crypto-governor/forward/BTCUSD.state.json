@@ -1,0 +1,229 @@
+{
+  "schema": 1,
+  "mode": "FORWARD_PAPER_ONLY",
+  "symbol": "BTCUSD",
+  "started_at": "2026-10-16T23:49:25.009619+00:00",
+  "last_candle_open": "2026-10-16T22:00:00+00:00",
+  "last_hash": "8e14f2e85fb59e9701dea972c565416cb935a62e050840ac8eded6892c914460",
+  "fee": 0.008,
+  "slippage": 0.0005,
+  "capital": 10000.0,
+  "portfolios": {
+    "plain": {
+      "cash": 10000.0,
+      "units": 0.0,
+      "peak": 10000.0,
+      "orders": 0,
+      "turnover": 0.0,
+      "fees": 0.0,
+      "slippage": 0.0,
+      "observations": 1,
+      "exposure_sum": 0.0,
+      "gate": {
+        "max_weight": 0.1,
+        "dd_halt": 0.05,
+        "daily_halt": 0.02,
+        "entry_cap": 3,
+        "day": "2026-10-16",
+        "day_start_equity": 10000.0,
+        "daily_stopped": false,
+        "permanent_stopped": false,
+        "entries": 0
+      }
+    },
+    "plain_3pct": {
+      "cash": 10000.0,
+      "units": 0.0,
+      "peak": 10000.0,
+      "orders": 0,
+      "turnover": 0.0,
+      "fees": 0.0,
+      "slippage": 0.0,
+      "observations": 1,
+      "exposure_sum": 0.0,
+      "gate": {
+        "max_weight": 0.1,
+        "dd_halt": 0.05,
+        "daily_halt": 0.02,
+        "entry_cap": 3,
+        "day": "2026-10-16",
+        "day_start_equity": 10000.0,
+        "daily_stopped": false,
+        "permanent_stopped": false,
+        "entries": 0
+      }
+    },
+    "simple_vol_guard": {
+      "cash": 10000.0,
+      "units": 0.0,
+      "peak": 10000.0,
+      "orders": 0,
+      "turnover": 0.0,
+      "fees": 0.0,
+      "slippage": 0.0,
+      "observations": 1,
+      "exposure_sum": 0.0,
+      "gate": {
+        "max_weight": 0.1,
+        "dd_halt": 0.05,
+        "daily_halt": 0.02,
+        "entry_cap": 3,
+        "day": "2026-10-16",
+        "day_start_equity": 10000.0,
+        "daily_stopped": false,
+        "permanent_stopped": false,
+        "entries": 0
+      }
+    },
+    "tacm_full": {
+      "cash": 10000.0,
+      "units": 0.0,
+      "peak": 10000.0,
+      "orders": 0,
+      "turnover": 0.0,
+      "fees": 0.0,
+      "slippage": 0.0,
+      "observations": 1,
+      "exposure_sum": 0.0,
+      "gate": {
+        "max_weight": 0.1,
+        "dd_halt": 0.05,
+        "daily_halt": 0.02,
+        "entry_cap": 3,
+        "day": "2026-10-16",
+        "day_start_equity": 10000.0,
+        "daily_stopped": false,
+        "permanent_stopped": false,
+        "entries": 0
+      }
+    },
+    "tacm_no_tamas": {
+      "cash": 10000.0,
+      "units": 0.0,
+      "peak": 10000.0,
+      "orders": 0,
+      "turnover": 0.0,
+      "fees": 0.0,
+      "slippage": 0.0,
+      "observations": 1,
+      "exposure_sum": 0.0,
+      "gate": {
+        "max_weight": 0.1,
+        "dd_halt": 0.05,
+        "daily_halt": 0.02,
+        "entry_cap": 3,
+        "day": "2026-10-16",
+        "day_start_equity": 10000.0,
+        "daily_stopped": false,
+        "permanent_stopped": false,
+        "entries": 0
+      }
+    },
+    "cash": {
+      "cash": 10000.0,
+      "units": 0.0,
+      "peak": 10000.0,
+      "orders": 0,
+      "turnover": 0.0,
+      "fees": 0.0,
+      "slippage": 0.0,
+      "observations": 1,
+      "exposure_sum": 0.0,
+      "gate": {
+        "max_weight": 0.1,
+        "dd_halt": 0.05,
+        "daily_halt": 0.02,
+        "entry_cap": 3,
+        "day": null,
+        "day_start_equity": null,
+        "daily_stopped": false,
+        "permanent_stopped": false,
+        "entries": 0
+      }
+    },
+    "passive_10pct": {
+      "cash": 8992.0,
+      "units": 0.012261685400133993,
+      "peak": 10000.0,
+      "orders": 1,
+      "turnover": 1000.0,
+      "fees": 8.0,
+      "slippage": 0.4997501249375332,
+      "observations": 1,
+      "exposure_sum": 0.1000349970599434,
+      "gate": {
+        "max_weight": 0.1,
+        "dd_halt": 0.05,
+        "daily_halt": 0.02,
+        "entry_cap": 3,
+        "day": null,
+        "day_start_equity": null,
+        "daily_stopped": false,
+        "permanent_stopped": false,
+        "entries": 0
+      }
+    },
+    "passive_3pct": {
+      "cash": 9697.6,
+      "units": 0.0036785056200401983,
+      "peak": 10000.0,
+      "orders": 1,
+      "turnover": 300.0,
+      "fees": 2.4,
+      "slippage": 0.14992503748125996,
+      "observations": 1,
+      "exposure_sum": 0.029992637553107878,
+      "gate": {
+        "max_weight": 0.1,
+        "dd_halt": 0.05,
+        "daily_halt": 0.02,
+        "entry_cap": 3,
+        "day": null,
+        "day_start_equity": null,
+        "daily_stopped": false,
+        "permanent_stopped": false,
+        "entries": 0
+      }
+    }
+  },
+  "governors": {
+    "tacm_full": {
+      "incumbent": "momentum_12_48",
+      "prev_strengths": {
+        "Crystal": 0.4057731863348612,
+        "Flower": 0.5312902122334566,
+        "Flame": 0.033936915100086416
+      },
+      "cooldown_until_bar": -1,
+      "bar_index": 1,
+      "selection_history": [
+        "momentum_12_48"
+      ]
+    },
+    "tacm_no_tamas": {
+      "incumbent": "momentum_12_48",
+      "prev_strengths": {
+        "Crystal": 0.4057731863348612,
+        "Flower": 0.5312902122334566,
+        "Flame": 0.033936915100086416
+      },
+      "cooldown_until_bar": -1,
+      "bar_index": 1,
+      "selection_history": [
+        "momentum_12_48"
+      ]
+    }
+  },
+  "shadow": {
+    "momentum_12_48": [],
+    "mean_revert_z24": []
+  },
+  "last_signals": {
+    "momentum_12_48": 0.0,
+    "mean_revert_z24": 0.0
+  },
+  "before_last_signals": null,
+  "last_close": 81666.9,
+  "last_quote_at": "2026-10-16T23:49:25.009581+00:00",
+  "events": 1
+}
