@@ -1,0 +1,33 @@
+name: TACM supervisor lab (paper-only)
+on:
+  pull_request:
+    paths:
+      - 'crypto-governor/supervisor_lab.py'
+      - 'crypto-governor/tests/test_supervisor_lab.py'
+      - 'crypto-governor/tests/test_forward_paper.py'
+      - 'crypto-governor/forward_paper.py'
+      - '.github/workflows/tacm-forward-paper.yml'
+      - 'crypto-governor/SUPERVISOR_LAB.md'
+      - '.github/workflows/tacm-supervisor-lab-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-paper-supervisor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run existing and supervisor unit tests
+        run: python -m unittest discover -s crypto-governor/tests -v
+      - name: Research replay with existing real Kraken BTC snapshot
+        run: python crypto-governor/supervisor_lab.py docs/crypto-governor/data/BTCUSD.json --fee 0.008 --slippage 0.0005 --out /tmp/tacm-supervisor-btc
+      - name: Research replay with existing real Kraken ETH snapshot
+        run: python crypto-governor/supervisor_lab.py docs/crypto-governor/data/ETHUSD.json --fee 0.008 --slippage 0.0005 --out /tmp/tacm-supervisor-eth
