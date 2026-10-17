@@ -55,6 +55,22 @@ class ForwardPaperTests(unittest.TestCase):
         self.assertIsNone(event)
         self.assertEqual(s1, s2)
 
+    def test_same_completed_candle_with_later_quote_is_noop(self):
+        """Four scheduled retries must never trade the same hourly signal twice."""
+        snap, quote, now = fixture()
+        state, first = advance(snap, quote, None, now=now, symbol="BTCUSD")
+        later = now + timedelta(minutes=15)
+        newer_quote = dict(quote)
+        newer_quote["observed_at"] = (later - timedelta(seconds=2)).isoformat()
+        newer_quote["bid"] *= 1.004
+        newer_quote["ask"] *= 1.004
+        repeated_state, repeated_event = advance(
+            snap, newer_quote, state, now=later, symbol="BTCUSD")
+        self.assertIsNone(repeated_event)
+        self.assertEqual(repeated_state, state)
+        self.assertEqual(repeated_state["last_hash"], first["hash"])
+        self.assertEqual(repeated_state["events"], 1)
+
     def test_advance_governor_preserves_restart_state(self):
         snap, quote, now = fixture()
         s1, ev1 = advance(snap, quote, None, now=now, symbol="BTCUSD")
