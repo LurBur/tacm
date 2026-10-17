@@ -1,644 +1,106 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TACM Frontier Console</title>
-  <meta name="description" content="Frontier-grade TACM supervisory paper-trading display." />
-  <style>
-    :root {
-      --bg: #071018;
-      --bg2: #0b1724;
-      --panel: rgba(15, 24, 38, 0.74);
-      --panel-strong: rgba(12, 20, 34, 0.92);
-      --line: rgba(120, 170, 220, 0.14);
-      --text: #ebf3ff;
-      --muted: #8fa8c2;
-      --soft: #b8cae0;
-      --cyan: #54e0ff;
-      --blue: #58a6ff;
-      --violet: #8f7cff;
-      --green: #56f2b8;
-      --amber: #ffcf70;
-      --red: #ff7f96;
-      --glow: 0 0 0 1px rgba(104, 170, 255, .13), 0 10px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.03);
-      --radius: 22px;
-    }
-
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: radial-gradient(circle at top left, #102437 0%, var(--bg) 34%, #050a10 100%); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
-    body::before {
-      content: ""; position: fixed; inset: 0; pointer-events: none;
-      background:
-        linear-gradient(rgba(90,140,190,.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(90,140,190,.06) 1px, transparent 1px);
-      background-size: 42px 42px;
-      mask-image: radial-gradient(circle at center, black, transparent 85%);
-      opacity: .35;
-    }
-
-    a { color: var(--cyan); text-decoration: none; }
-    .app { width: min(1500px, calc(100vw - 24px)); margin: 18px auto 40px; }
-    .topbar {
-      display: grid; grid-template-columns: 1.4fr .8fr; gap: 18px; align-items: stretch;
-    }
-    .hero, .pilot {
-      background: linear-gradient(180deg, rgba(18,31,48,.95), rgba(8,16,25,.88));
-      border: 1px solid rgba(116, 175, 255, .12);
-      border-radius: 28px; box-shadow: var(--glow); position: relative; overflow: hidden;
-    }
-    .hero { padding: 24px 26px 22px; }
-    .hero::after {
-      content:""; position:absolute; width: 420px; height: 420px; border-radius: 50%;
-      right:-120px; top:-180px; background: radial-gradient(circle, rgba(84,224,255,.26), rgba(84,224,255,0) 65%);
-      filter: blur(8px);
-    }
-    .eyebrow { display:inline-flex; align-items:center; gap:8px; font-size:12px; color: var(--soft); text-transform: uppercase; letter-spacing: .16em; }
-    .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--green); box-shadow: 0 0 20px rgba(86,242,184,.8); animation: pulse 1.8s infinite; }
-    @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: .55; } }
-    h1 { font-size: clamp(28px, 4vw, 46px); line-height: 1.02; margin: 14px 0 10px; letter-spacing: -.035em; max-width: 10.5ch; }
-    .sub { color: var(--muted); max-width: 70ch; font-size: 15px; line-height: 1.6; }
-    .hero-grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px; margin-top: 22px; }
-    .stat {
-      padding: 14px 16px; border-radius: 18px; background: rgba(255,255,255,.028); border: 1px solid rgba(255,255,255,.06);
-      min-height: 90px;
-    }
-    .stat .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
-    .stat .v { font-size: 28px; font-weight: 700; margin-top: 8px; letter-spacing: -.02em; }
-    .stat .s { font-size: 12px; color: var(--soft); margin-top: 5px; }
-    .pilot { padding: 18px; display:flex; flex-direction:column; justify-content:space-between; }
-    .status-chip {
-      display:inline-flex; align-items:center; gap:8px; padding:8px 11px; border-radius:999px; font-size:12px; font-weight:700;
-      letter-spacing:.08em; text-transform:uppercase; background: rgba(255, 194, 102, .12); color: #ffd89b; border:1px solid rgba(255,194,102,.22);
-    }
-    .pilot p { color: var(--muted); line-height:1.55; font-size:14px; }
-    .pilot .big { font-size: 40px; font-weight: 800; letter-spacing:-.05em; margin: 8px 0; }
-    .pilot .small { color: var(--soft); font-size: 13px; }
-    .pilot .progress { height: 12px; background: rgba(255,255,255,.06); border-radius: 999px; overflow: hidden; margin-top: 18px; }
-    .pilot .fill { height: 100%; width: 26.3%; background: linear-gradient(90deg, var(--amber), #ff8e5b); border-radius: 999px; box-shadow: 0 0 22px rgba(255,176,88,.35); }
-
-    .toolbar {
-      display:flex; gap:12px; align-items:center; justify-content:space-between; margin: 18px 0; flex-wrap: wrap;
-    }
-    .controls, .legend { display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
-    .select, .button {
-      background: rgba(8,16,25,.72); color: var(--text); border:1px solid rgba(120,170,220,.16); border-radius: 14px; padding: 11px 14px;
-      box-shadow: var(--glow);
-    }
-    .button { cursor:pointer; font-weight: 650; }
-    .button:hover { border-color: rgba(84,224,255,.42); }
-    .legend-item { color: var(--muted); font-size: 13px; display:inline-flex; align-items:center; gap:8px; }
-    .legend-swatch { width:14px; height:14px; border-radius: 99px; }
-
-    .grid {
-      display:grid; grid-template-columns: 1.25fr .95fr; gap:18px;
-    }
-    .panel {
-      background: linear-gradient(180deg, rgba(16,26,42,.92), rgba(8,14,24,.9));
-      border:1px solid rgba(120,170,220,.11); border-radius: var(--radius); box-shadow: var(--glow); overflow:hidden;
-    }
-    .panel-head {
-      display:flex; align-items:center; justify-content:space-between; gap:12px; padding: 18px 20px 14px; border-bottom:1px solid rgba(255,255,255,.05);
-    }
-    .panel-head h2 { margin:0; font-size:18px; letter-spacing:-.02em; }
-    .panel-head .caption { color: var(--muted); font-size: 13px; }
-    .panel-body { padding: 16px 20px 20px; }
-
-    .pipeline {
-      display:grid; grid-template-columns: repeat(4, minmax(0, 1fr) 14px) minmax(0, 1fr); gap:8px; align-items:center;
-    }
-    .pipe-node {
-      position:relative; min-height: 164px; padding:16px; border-radius: 18px; background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);
-      overflow:hidden;
-    }
-    .pipe-node h3 { margin: 0 0 8px; font-size: 15px; }
-    .pipe-node p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
-    .pipe-tag { display:inline-block; margin-top:10px; padding:5px 8px; border-radius: 999px; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color: var(--soft); background: rgba(255,255,255,.05); }
-    .pipe-node .orb {
-      position:absolute; width: 170px; height: 170px; border-radius: 50%; right:-58px; bottom:-70px; opacity:.16; filter: blur(4px);
-    }
-    .c1 { background: radial-gradient(circle, var(--cyan), transparent 65%); }
-    .c2 { background: radial-gradient(circle, var(--blue), transparent 65%); }
-    .c3 { background: radial-gradient(circle, var(--violet), transparent 65%); }
-    .c4 { background: radial-gradient(circle, var(--green), transparent 65%); }
-    .c5 { background: radial-gradient(circle, var(--amber), transparent 65%); }
-    .connector {
-      height:2px; background: linear-gradient(90deg, rgba(84,224,255,.15), rgba(84,224,255,.9), rgba(84,224,255,.15));
-      position: relative; margin: 0 -4px;
-    }
-    .connector::after {
-      content:""; position:absolute; left:-12px; top:-3px; width:12px; height:8px;
-      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-      animation: travel 2.6s linear infinite;
-      filter: drop-shadow(0 0 8px rgba(84,224,255,.8));
-    }
-    @keyframes travel { from { left: -4px; } to { left: calc(100% - 8px); } }
-
-    .metrics { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px; }
-    .metric { background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius: 18px; padding: 16px; }
-    .metric .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
-    .metric .value { font-size: 28px; font-weight: 750; margin-top: 8px; }
-    .metric .delta { margin-top: 7px; font-size: 12px; color: var(--soft); }
-
-    .svg-wrap { height: 320px; border-radius: 18px; background: rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.05); padding: 10px; }
-    svg { width:100%; height:100%; display:block; }
-    .xlab, .ylab { fill: #7e9ab7; font-size: 11px; }
-    .gridline { stroke: rgba(132, 173, 219, .12); stroke-width: 1; }
-
-    table { width:100%; border-collapse: collapse; font-size: 14px; }
-    th, td { padding: 12px 10px; text-align: right; border-bottom:1px solid rgba(255,255,255,.05); }
-    th:first-child, td:first-child { text-align:left; }
-    th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing:.08em; }
-    .good { color: var(--green); }
-    .bad { color: var(--red); }
-    .chip { display:inline-flex; align-items:center; gap:7px; border-radius: 999px; padding: 6px 10px; font-size: 12px; background: rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.06); }
-
-    .split { display:grid; grid-template-columns: 1.05fr .95fr; gap:18px; margin-top:18px; }
-    .events { display:flex; flex-direction:column; gap:12px; }
-    .event {
-      border:1px solid rgba(255,255,255,.06); border-radius: 16px; padding: 14px 15px; background: rgba(255,255,255,.03);
-      display:grid; grid-template-columns: 1.4fr .9fr; gap:12px; align-items:center;
-    }
-    .event strong { display:block; font-size:14px; }
-    .event .tiny { color: var(--muted); font-size: 12px; line-height:1.5; }
-    .event .right { text-align:right; }
-
-    .ticker {
-      overflow:hidden; white-space: nowrap; padding: 10px 0 2px; border-top:1px solid rgba(255,255,255,.05); margin-top: 12px;
-    }
-    .ticker-track {
-      display:inline-flex; gap: 28px; min-width:100%; padding-left:100%; animation: scroll 32s linear infinite;
-    }
-    @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
-    .ticker-item { color: var(--soft); font-size: 13px; }
-
-    .footer-note {
-      color: var(--muted); font-size: 13px; line-height:1.7; margin-top: 14px;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
-    }
-    @media (max-width: 1200px) {
-      .topbar, .grid, .split { grid-template-columns: 1fr; }
-      .pipeline { grid-template-columns: 1fr; }
-      .connector { height: 32px; width: 2px; margin: 0 auto; }
-      .connector::after { width: 8px; height: 12px; top:-8px; left:-3px; background: linear-gradient(180deg, transparent, var(--cyan), transparent); animation: travelY 2.6s linear infinite; }
-      @keyframes travelY { from { top: -4px; } to { top: calc(100% - 8px); } }
-      .hero-grid, .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
-      .event { grid-template-columns: 1fr; }
-      .event .right { text-align:left; }
-    }
-    @media (max-width: 700px) {
-      .app { width: min(100vw - 14px, 1600px); }
-      .hero, .pilot, .panel { border-radius: 20px; }
-      .hero-grid, .metrics { grid-template-columns: 1fr; }
-      .panel-body { padding: 14px; }
-      th, td { padding: 10px 6px; }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#050607">
+<meta name="description" content="TACM paper research monitoring console">
+<title>TACM | Operations</title>
+<style>
+:root{color-scheme:dark;--bg:#050607;--surface:#0a0c0f;--surface2:#0c0f12;--line:#22262b;--line2:#171b20;--text:#eceff2;--muted:#737d87;--muted2:#a0a9b0;--cyan:#73d9e9;--mint:#72c7aa;--red:#e18585;--amber:#dda967;--violet:#aea4e0;--font:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif}
+*{box-sizing:border-box}html{min-width:320px;background:var(--bg)}body{margin:0;background:var(--bg);color:var(--text);font:12px/1.4 var(--font);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}button{font:inherit;cursor:pointer;color:inherit}button:focus-visible,a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}a{color:inherit;text-decoration:none}svg{display:block}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.muted{color:var(--muted)}.pos{color:var(--mint)}.neg{color:var(--red)}
+.shell{width:min(1760px,100%);margin:auto;padding:0 18px 20px}
+.header{height:62px;display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;min-width:230px}.sigil{height:31px;width:31px;position:relative;display:grid;place-items:center;border:1px solid #3c5358;border-radius:8px;background:#0d1518}.sigil:before,.sigil:after{content:"";position:absolute;inset:6px;border:1px solid var(--cyan);transform:rotate(45deg);border-radius:3px;opacity:.8}.sigil:after{inset:10px;transform:rotate(0deg);background:var(--cyan);opacity:.45}.brand-name{font-size:17px;letter-spacing:.17em;font-weight:780;line-height:1.05}.brand-sub{display:block;margin-top:4px;color:var(--muted);font-size:9px;letter-spacing:.18em}.header-mid{display:flex;align-items:center;gap:10px;margin-right:auto}
+.segment{display:flex;align-items:center;border:1px solid var(--line);padding:3px;background:#090b0e;border-radius:8px}.segment button{border:0;border-radius:5px;background:transparent;padding:7px 12px;letter-spacing:.045em;color:var(--muted2);font-size:11px;font-weight:650}.segment button.active{background:#1a2024;color:var(--text);box-shadow:inset 0 0 0 1px #303b3e}.scope-note{color:var(--muted);white-space:nowrap}
+.header-right{display:flex;align-items:center;gap:14px;margin-left:auto}.mode-pill{font-size:10px;border:1px solid #54402d;color:var(--amber);padding:5px 9px;border-radius:5px;letter-spacing:.13em;font-weight:720;white-space:nowrap}.heartbeat{display:inline-flex;align-items:center;gap:7px;color:var(--muted2);white-space:nowrap}.status-dot{width:6px;height:6px;border-radius:50%;background:var(--mint);box-shadow:0 0 9px rgba(114,199,170,.5)}.status-dot.warn{background:var(--amber);box-shadow:none}.status-dot.err{background:var(--red);box-shadow:none}.reload{height:31px;width:33px;display:grid;place-items:center;border-radius:6px;border:1px solid var(--line);background:#0b0d10}.reload:hover{border-color:#566267}.reload svg{width:15px;height:15px;color:var(--muted2)}
+.metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-bottom:1px solid var(--line);min-height:91px}.metric{padding:17px 17px 12px 0;position:relative;min-width:0}.metric:not(:last-child):after{content:"";position:absolute;right:16px;top:21px;bottom:17px;width:1px;background:var(--line2)}.metric-label{color:var(--muted);text-transform:uppercase;font-size:9px;letter-spacing:.15em;font-weight:720}.metric-value{font-size:24px;font-weight:600;letter-spacing:-.045em;line-height:1.18;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.metric-meta{font-size:10px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.content{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(310px,.81fr);gap:11px;margin-top:12px;min-height:422px}.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-width:0;overflow:hidden}.panel-head{height:45px;display:flex;align-items:center;gap:14px;padding:0 15px;border-bottom:1px solid var(--line2)}.panel-title{font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:740;white-space:nowrap}.panel-extra{font-size:10px;color:var(--muted);white-space:nowrap}.panel-spacer{flex:1}.tiny-segment{display:flex;border:1px solid #242a30;border-radius:5px;padding:2px;gap:2px}.tiny-segment button{border:0;background:transparent;color:var(--muted);font-size:10px;letter-spacing:.03em;padding:5px 9px;border-radius:3px}.tiny-segment button.active{background:#22292e;color:var(--text)}.chart-price{font-size:13px;font-weight:690;color:var(--text);letter-spacing:-.015em}
+.chart-area{position:relative;height:355px;padding:3px 10px 6px}.chart-area svg{width:100%;height:100%;overflow:visible;touch-action:pan-y}.chart-label{position:absolute;bottom:17px;left:17px;font-size:10px;color:var(--muted);pointer-events:none;background:rgba(5,6,7,.78);padding:3px 5px}.chart-empty{height:100%;display:grid;place-items:center;color:var(--muted)}
+.rail{display:flex;flex-direction:column;gap:11px}.brain{flex:1}.brain-top{display:flex;gap:10px;align-items:center;padding:15px 15px 13px}.big-action{font-size:24px;line-height:1.06;font-weight:690;letter-spacing:-.048em}.action-sub{font-size:10px;color:var(--muted);margin-top:5px}.action-light{margin-left:auto;border:1px solid #333a40;color:var(--muted2);font-size:10px;letter-spacing:.07em;border-radius:4px;padding:5px 8px;text-align:right}
+.signal-route{height:49px;display:flex;align-items:center;justify-content:space-between;gap:4px;margin:1px 15px 9px;padding:0 9px;background:#080a0c;border:1px solid var(--line2);border-radius:6px}.route-node{font-size:9px;letter-spacing:.095em;text-transform:uppercase;color:var(--muted2);white-space:nowrap}.route-node.current{color:var(--cyan)}.route-link{height:1px;flex:1;background:#263337;position:relative;overflow:hidden}.route-link::after{content:"";position:absolute;top:-1px;height:3px;width:17px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);animation:packet 3.6s linear infinite;opacity:.73;box-shadow:0 0 6px #4da9b0}.route-link:nth-child(4)::after{animation-delay:.5s}.route-link:nth-child(6)::after{animation-delay:1s}.route-link:nth-child(8)::after{animation-delay:1.5s}@keyframes packet{0%{transform:translateX(-24px);opacity:.1}20%,80%{opacity:.9}100%{transform:translateX(155px);opacity:.1}}
+.divider{border-top:1px solid var(--line2)}.triad{padding:12px 15px 10px}.subhead{font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;font-weight:710;display:flex;justify-content:space-between}.triad-row{display:grid;grid-template-columns:59px 1fr 40px;gap:10px;align-items:center;margin-top:9px}.triad-name{font-size:11px;color:var(--muted2)}.triad-track{height:4px;background:#22272c;border-radius:5px;overflow:hidden}.triad-fill{height:100%;width:0%;border-radius:5px;transition:width 550ms ease}.triad-fill.crystal{background:#75d6e7}.triad-fill.flower{background:#a8a3df}.triad-fill.flame{background:#e9a76e}.triad-v{text-align:right;font-size:10px;color:var(--muted2)}
+.agents{padding:10px 15px 8px}.agent-row{display:grid;grid-template-columns:minmax(0,1fr) 53px 48px;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid #171b1d}.agent-row:last-child{border:0}.agent-title{font-size:11px;white-space:nowrap}.agent-meta{display:block;margin-top:2px;color:var(--muted);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.agent-confidence{font-size:11px;color:var(--muted2);text-align:right}.side-pill{text-align:center;font-size:9px;font-weight:700;border-radius:4px;padding:4px 4px;background:#1a2725;color:var(--mint)}.side-pill.flat{background:#222124;color:#b5a3ac}
+.gate{height:56px;display:flex;align-items:center;gap:10px;padding:10px 15px;border-top:1px solid var(--line2);background:#090c0d}.gate-ring{width:24px;height:24px;display:grid;place-items:center;border:1px solid #39564d;border-radius:50%;color:var(--mint);font-size:14px}.gate-ring.warn{color:var(--amber);border-color:#5b4d35}.gate-label{font-size:11px;font-weight:690}.gate-detail{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:315px}
+.lower{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.85fr);gap:11px;margin-top:11px;align-items:start}.lower>.panel{height:273px}.table-wrap{overflow-x:auto}.table{border-collapse:collapse;width:100%;font-size:11px;white-space:nowrap}.table thead th{font-size:9px;font-weight:670;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;text-align:right;padding:7px 12px;border-bottom:1px solid var(--line2)}.table th:first-child,.table td:first-child{text-align:left}.table tbody td{padding:5px 12px;border-bottom:1px solid #161a1d;text-align:right}.table tbody tr:last-child td{border-bottom:0}.table tbody tr:hover{background:#101519}.table tr.focus{background:linear-gradient(90deg,#101a1c,transparent 70%)}.strategy-name{display:flex;align-items:center;gap:7px;font-weight:530}.strat-dot{width:6px;height:6px;border-radius:50%;background:#758791}.strat-dot.supervisor{background:var(--cyan)}.strat-dot.reference{background:#6e7480}.small-action{font-size:9px;text-transform:uppercase;color:var(--muted2)}.table-footer{display:flex;justify-content:space-between;gap:9px;padding:5px 12px;border-top:1px solid var(--line2);font-size:9px;color:var(--muted)}
+.events{height:222px;overflow-y:auto;padding:4px 13px 0;scrollbar-width:thin;scrollbar-color:#2b3135 transparent}.event{display:grid;grid-template-columns:8px minmax(0,1fr) 65px;gap:9px;min-height:45px;padding:7px 0;align-items:start;border-bottom:1px solid #171a1e}.event:last-child{border:0}.evt-mark{height:7px;width:7px;border-radius:50%;background:#525e65;margin-top:5px}.evt-mark.buy{background:var(--mint)}.evt-mark.sell{background:var(--red)}.evt-mark.gap{background:var(--amber)}.evt-name{font-size:11px;font-weight:600}.evt-meta{font-size:10px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.evt-time{text-align:right;font-size:10px;color:var(--muted2);white-space:nowrap}
+.footer{margin-top:9px;display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--muted);align-items:center;flex-wrap:wrap}.footer-links{display:flex;gap:13px}.footer a:hover{color:var(--cyan)}.warning-bar{display:none;border:1px solid #654b33;background:#24190e;color:#f1c18f;padding:9px 11px;border-radius:5px;margin-top:10px}.warning-bar.show{display:block}
+@media(min-width:1380px){.chart-area{height:367px}.content{min-height:434px}.lower>.panel{height:277px}.events{height:228px}}
+@media(max-width:1190px){.shell{padding:0 12px 18px}.content{grid-template-columns:minmax(0,1.3fr) minmax(300px,.9fr)}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.metric{padding:13px 12px}.metric:not(:last-child):after{right:4px}.metric-value{font-size:21px}.brand{min-width:180px}.scope-note{display:none}.header-right{gap:8px}}
+@media(max-width:840px){.content,.lower{grid-template-columns:1fr}.rail{display:grid;grid-template-columns:1fr;}.chart-area{height:320px}.lower>.panel{height:auto;min-height:270px}.events{height:230px}.header{gap:10px}.brand{min-width:auto}.brand-sub{display:none}.heartbeat{display:none}}
+@media(max-width:540px){.shell{padding:0 9px 20px}.header{height:56px}.brand-name{font-size:15px}.brand{gap:7px}.sigil{width:25px;height:25px}.segment button{width:46px;padding:7px 3px;white-space:nowrap;font-size:0}.segment #mBTC::after{content:"BTC";font-size:11px}.segment #mETH::after{content:"ETH";font-size:11px}.mode-pill{font-size:9px;padding:5px}.header-right{margin-left:auto}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.metric{padding:11px 6px 11px 0;min-height:72px}.metric-label{font-size:8px;letter-spacing:.07em}.metric-value{font-size:18px;margin-top:5px}.metric-meta{font-size:9px}.metric:not(:last-child):after{display:none}.panel-head{padding:0 10px;gap:8px}.panel-extra{display:none}.chart-area{height:285px}.brain-top{padding:12px}.triad,.agents{padding-left:12px;padding-right:12px}.gate{padding-left:12px;padding-right:12px}.table{font-size:10px}.table thead th,.table tbody td{padding-left:7px;padding-right:7px}.table thead th:nth-child(5),.table td:nth-child(5),.table thead th:nth-child(6),.table td:nth-child(6){display:none}.footer{font-size:9px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
 </head>
 <body>
-  <div class="app">
-    <section class="topbar">
-      <div class="hero">
-        <div class="eyebrow"><span class="dot"></span> frontier supervisory intelligence / paper-only / no live capital</div>
-        <h1>TACM Frontier Console</h1>
-        <div class="sub">
-          A consolidated, paper-only operating view for the TACM research stack: public market snapshots, deterministic signal agents, TACM supervision, independent risk controls, and append-only paper evidence. The UI is designed to make the moving parts obvious.
-        </div>
-        <div class="hero-grid">
-          <div class="stat"><div class="k">Observation cadence</div><div class="v">15m</div><div class="s">4 attempts per hour / 1 decision per completed 1h candle</div></div>
-          <div class="stat"><div class="k">Mode</div><div class="v">Paper</div><div class="s">No real orders. No exchange keys.</div></div>
-          <div class="stat"><div class="k">Supervisor set</div><div class="v">8</div><div class="s">Plain, 3% plain, TACM, no-Tamas, guards, references</div></div>
-          <div class="stat"><div class="k">Assets</div><div class="v" id="heroSymbol">BTC</div><div class="s">Live UI switches between BTC/USD and ETH/USD</div></div>
-        </div>
-      </div>
-      <div class="pilot">
-        <div>
-          <div class="status-chip">pilot evidence only</div>
-          <p>Forward validation stays blocked until observation reliability is adequate. The interface makes this explicit, so polished visuals never hide weak experimental coverage.</p>
-        </div>
-        <div>
-          <div class="small">Current hourly observation coverage</div>
-          <div class="big" id="coverageBig">--</div>
-          <div class="small" id="coverageNote">Loading reliability status…</div>
-          <div class="progress"><div class="fill" id="coverageFill"></div></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="toolbar">
-      <div class="controls">
-        <select class="select" id="symbolSelect">
-          <option value="BTCUSD">BTC / USD</option>
-          <option value="ETHUSD">ETH / USD</option>
-        </select>
-        <button class="button" id="reloadBtn">Reload data</button>
-        <div class="chip" id="lastRefresh">Awaiting first load</div>
-      </div>
-      <div class="legend">
-        <div class="legend-item"><span class="legend-swatch" style="background:#8fa8c2"></span>Plain 10%</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:#54e0ff"></span>TACM Full</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:#56f2b8"></span>No-Tamas</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:#ffcf70"></span>Passive 3%</div>
-      </div>
-    </section>
-
-    <section class="grid">
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Animated system map</h2>
-            <div class="caption">Data-backed node statuses · animation illustrates the pipeline, not live executions</div>
-          </div>
-          <div class="chip" id="stackMode">Hour-based / deterministic / supervisory</div>
-        </div>
-        <div class="panel-body">
-          <div class="pipeline">
-            <div class="pipe-node">
-              <h3>1. Market snapshots</h3>
-              <p>Kraken public OHLC snapshots establish the causal market record used by every strategy and control path.</p>
-              <span class="pipe-tag" id="stageMarket">public data</span>
-              <div class="orb c1"></div>
-            </div>
-            <div class="connector"></div>
-            <div class="pipe-node">
-              <h3>2. Signal agents</h3>
-              <p>Simple, understandable bots generate proposals: momentum and mean-reversion, with no hidden agent magic.</p>
-              <span class="pipe-tag" id="stageAgents">boring by design</span>
-              <div class="orb c2"></div>
-            </div>
-            <div class="connector"></div>
-            <div class="pipe-node">
-              <h3>3. TACM supervisor</h3>
-              <p>Triadic control decides whether to allow, suppress, or redirect agent intent using supervisory logic.</p>
-              <span class="pipe-tag" id="stageSupervisor">supervisor</span>
-              <div class="orb c3"></div>
-            </div>
-            <div class="connector"></div>
-            <div class="pipe-node">
-              <h3>4. Risk gate</h3>
-              <p>Independent exposure limits, drawdown controls, and daily entry rules cap action even if a strategy wants more.</p>
-              <span class="pipe-tag" id="stageRisk">hard constraints</span>
-              <div class="orb c4"></div>
-            </div>
-            <div class="connector"></div>
-            <div class="pipe-node">
-              <h3>5. Paper ledger</h3>
-              <p>Hash-linked forward events preserve simulated fills and outcomes so the experiment can be audited later.</p>
-              <span class="pipe-tag" id="stageLedger">paper ledger</span>
-              <div class="orb c5"></div>
-            </div>
-          </div>
-          <div class="ticker">
-            <div class="ticker-track" id="tickerTrack">
-              <span class="ticker-item">Loading current run-state indicators…</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Research health</h2>
-            <div class="caption">Coverage, cadence, and infrastructure quality</div>
-          </div>
-          <div class="chip" id="dataStatusChip">Diagnostic pilot</div>
-        </div>
-        <div class="panel-body">
-          <div class="metrics" id="healthMetrics">
-            <div class="metric"><div class="label">Logged observations</div><div class="value">--</div><div class="delta">Waiting for data</div></div>
-            <div class="metric"><div class="label">Missed hours</div><div class="value">--</div><div class="delta">Waiting for data</div></div>
-            <div class="metric"><div class="label">Latest quote age</div><div class="value">--</div><div class="delta">Waiting for data</div></div>
-            <div class="metric"><div class="label">Data verdict</div><div class="value">Pilot</div><div class="delta">Coverage gate not yet satisfied</div></div>
-          </div>
-          <div class="footer-note" id="healthNote">
-            This pane keeps the experiment honest: beautiful UI is not allowed to imply statistical validity.
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="split">
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Forward equity view</h2>
-            <div class="caption">Observed paper outcomes over time</div>
-          </div>
-          <div class="chip" id="chartLabel">Relative portfolio path</div>
-        </div>
-        <div class="panel-body">
-          <div class="svg-wrap"><svg id="chartSvg" viewBox="0 0 1000 320" preserveAspectRatio="none"></svg></div>
-          <div class="footer-note" id="chartNote">The chart compares supervisors using current forward-paper events only. Distinct exposure profiles mean return differences alone are not proof of better intelligence.</div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Supervisor scoreboard</h2>
-            <div class="caption">What each portfolio is doing right now</div>
-          </div>
-          <div class="chip" id="scoreboardChip">Same capital / different realized exposure</div>
-        </div>
-        <div class="panel-body">
-          <table>
-            <thead>
-              <tr>
-                <th>Portfolio</th>
-                <th>Net return</th>
-                <th>Virtual equity</th>
-                <th>Avg exposure</th>
-                <th>Orders</th>
-                <th>Fees</th>
-              </tr>
-            </thead>
-            <tbody id="scoreRows"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <section class="split">
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Recent decision stream</h2>
-            <div class="caption">Most recent forward-paper actions</div>
-          </div>
-          <div class="chip" id="eventChip">Last 8 events</div>
-        </div>
-        <div class="panel-body">
-          <div class="events" id="eventsList"></div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Method + caveats</h2>
-            <div class="caption">Professional display, still scientifically cautious</div>
-          </div>
-          <div class="chip">No real orders</div>
-        </div>
-        <div class="panel-body">
-          <div class="events">
-            <div class="event"><div><strong>One decision per completed hourly candle</strong><div class="tiny">The new 15-minute retry schedule only improves the chance of observing that candle. It does not create extra trade opportunities.</div></div><div class="right"><span class="chip">causal</span></div></div>
-            <div class="event"><div><strong>TACM is the experiment</strong><div class="tiny">The base bots stay intentionally simple so the supervisory contribution can be measured rather than buried inside opaque strategy complexity.</div></div><div class="right"><span class="chip">isolated variable</span></div></div>
-            <div class="event"><div><strong>Evidence is append-only</strong><div class="tiny">Forward journal events should not be quietly rewritten. Infrastructure quality, missed slots, and quote age should remain visible.</div></div><div class="right"><span class="chip">auditable</span></div></div>
-            <div class="event"><div><strong>UI goal</strong><div class="tiny">Look and feel should communicate frontier technology while preserving trust, caution, and interpretability.</div></div><div class="right"><span class="chip">frontier display</span></div></div>
-          </div>
-          <div class="footer-note">Single public console at <code>/tacm/crypto-governor/</code>. Legacy forward-dashboard links redirect here. Animated movement is explanatory; paper decisions are only made by the scheduled research workflow.</div>
-        </div>
-      </div>
-    </section>
+<div class="shell">
+  <header class="header">
+    <div class="brand"><span class="sigil" aria-hidden="true"></span><div><div class="brand-name">TACM</div><span class="brand-sub">SUPERVISORY SYSTEMS</span></div></div>
+    <div class="header-mid"><div class="segment" role="group" aria-label="Market"><button type="button" id="mBTC" class="active" aria-pressed="true">BTC / USD</button><button type="button" id="mETH" aria-pressed="false">ETH / USD</button></div><span class="scope-note mono">KRAKEN / 1H</span></div>
+    <div class="header-right"><span class="heartbeat" id="freshStatus"><span class="status-dot warn" id="freshDot"></span><span id="freshText">READING DATA</span></span><span class="mode-pill">PAPER · PILOT</span><button class="reload" id="refreshBtn" aria-label="Refresh data" title="Refresh data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.8 8.4A7.5 7.5 0 0 1 18.2 6L20 12M4 12l1.8 5.6A7.5 7.5 0 0 0 18.2 16"/></svg></button></div>
+  </header>
+  <div class="metrics" aria-label="System metrics">
+    <div class="metric"><div class="metric-label">Market price</div><div class="metric-value" id="kPrice">—</div><div class="metric-meta" id="kPriceMeta">Public observed quote</div></div>
+    <div class="metric"><div class="metric-label">TACM equity</div><div class="metric-value" id="kEquity">—</div><div class="metric-meta">Simulated / USD</div></div>
+    <div class="metric"><div class="metric-label">TACM return</div><div class="metric-value" id="kReturn">—</div><div class="metric-meta">Net of modeled costs</div></div>
+    <div class="metric"><div class="metric-label">vs. plain</div><div class="metric-value" id="kDelta">—</div><div class="metric-meta">Return difference / pp</div></div>
+    <div class="metric"><div class="metric-label">Exposure</div><div class="metric-value" id="kExposure">—</div><div class="metric-meta">TACM / current notional</div></div>
+    <div class="metric"><div class="metric-label">Coverage</div><div class="metric-value" id="kCoverage">—</div><div class="metric-meta" id="kCoverageMeta">Target: 95% in 7 days</div></div>
   </div>
-
-  <script>
-    const NAMES = {
-      plain: "Plain 10%",
-      plain_3pct: "Plain 3%",
-      simple_vol_guard: "Vol guard",
-      tacm_full: "TACM Full",
-      tacm_no_tamas: "TACM No-Tamas",
-      cash: "Cash",
-      passive_10pct: "Passive 10%",
-      passive_3pct: "Passive 3%"
-    };
-
-    const COLORS = {
-      plain: "#8fa8c2",
-      plain_3pct: "#5f7893",
-      simple_vol_guard: "#8f7cff",
-      tacm_full: "#54e0ff",
-      tacm_no_tamas: "#56f2b8",
-      passive_10pct: "#ff9d76",
-      passive_3pct: "#ffcf70",
-      cash: "#e7eef8"
-    };
-
-    const PLOT_KEYS = ["plain", "plain_3pct", "tacm_full", "tacm_no_tamas", "passive_3pct"];
-    const $ = (id) => document.getElementById(id);
-    const safe = (value) => String(value ?? "").replace(/[&<>"']/g, ch =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
-    const setStage = (id, value) => { const el = $(id); if(el) el.textContent = String(value); };
-    function renderStages(state, event) {
-      const sig = event.signals || {};
-      const signals = Object.values(sig);
-      const active = signals.filter(s => Number(s.target) > 0).length;
-      const full = event.decisions?.tacm_full || {};
-      const gate = String(full.gate || "unknown").replaceAll("_", " ");
-      const changes = Object.values(event.decisions || {}).filter(d =>
-        d.action === "buy" || d.action === "sell").length;
-      setStage("stageMarket", "last candle recorded");
-      setStage("stageAgents", active + " / " + signals.length + " long signals");
-      setStage("stageSupervisor", "TACM " + (full.action || "unknown"));
-      setStage("stageRisk", "risk: " + gate);
-      setStage("stageLedger", changes + " simulated fills / event");
-    }
-    const money = (x) => Number.isFinite(x) ? "$" + x.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2}) : "—";
-    const pct = (x, d=2) => Number.isFinite(x) ? x.toFixed(d) + "%" : "—";
-    const agoHours = (iso) => (Date.now() - Date.parse(iso)) / 36e5;
-    const fmt = (iso) => new Date(iso).toLocaleString();
-
-    async function get(url) {
-      const response = await fetch(url + (url.includes("?") ? "&" : "?") + "v=" + Date.now(), { cache: "no-store" });
-      if (!response.ok) throw new Error("HTTP " + response.status + " for " + url);
-      return response.text();
-    }
-
-    function setTicker(items) {
-      const track = $("tickerTrack");
-      track.innerHTML = "";
-      const expanded = [...items, ...items];
-      expanded.forEach(item => {
-        const span = document.createElement("span");
-        span.className = "ticker-item";
-        span.textContent = item;
-        track.appendChild(span);
-      });
-    }
-
-    function renderHealth(state, events) {
-      const misses = events.reduce((sum, e) => sum + Number(e.skipped_unobserved_hours || 0), 0);
-      const total = events.length + misses;
-      const coverage = total ? (events.length / total) * 100 : 0;
-      const latestAge = agoHours(events.at(-1).quote_at);
-      $("coverageBig").textContent = pct(coverage, 1);
-      $("coverageFill").style.width = Math.max(0, Math.min(100, coverage)) + "%";
-      $("coverageNote").textContent = `${events.length} logged / ${misses} missed / target 95%+ for official window`;
-      $("heroSymbol").textContent = state.symbol.startsWith("BTC") ? "BTC" : "ETH";
-
-      const verdict = "Pilot"; // A global coverage percentage alone cannot certify seven consecutive days or official validation.
-      const metrics = [
-        ["Logged observations", String(events.length), state.started_at ? `Started ${fmt(state.started_at)}` : ""],
-        ["Missed hours", String(misses), misses ? "Some intended slots were skipped" : "No gaps recorded"],
-        ["Latest quote age", latestAge.toFixed(1) + "h", `Last quote at ${fmt(events.at(-1).quote_at)}`],
-        ["Data verdict", "Pilot", "Requires seven-day reliability review and formal authorization"]
-      ];
-      const wrap = $("healthMetrics");
-      wrap.innerHTML = "";
-      metrics.forEach(([label, value, delta]) => {
-        const div = document.createElement("div");
-        div.className = "metric";
-        div.innerHTML = `<div class="label">${label}</div><div class="value">${value}</div><div class="delta">${delta}</div>`;
-        wrap.appendChild(div);
-      });
-      $("healthNote").textContent = `Coverage currently ${pct(coverage, 1)}. The UI remains explicit that this is still a diagnostic pilot until reliability is demonstrated.`;
-      $("dataStatusChip").textContent = verdict === "Pilot" ? "Diagnostic pilot" : verdict;
-      $("lastRefresh").textContent = `Loaded ${new Date().toLocaleTimeString()}`;
-
-      setTicker([
-        `${state.symbol} forward ledger active`,
-        `${events.length} logged observations`,
-        `${misses} skipped hours recorded`,
-        `${pct(coverage, 1)} hourly coverage`,
-        `Latest quote age ${latestAge.toFixed(1)}h`,
-        `Fee assumption ${(state.fee * 100).toFixed(2)}% per side`,
-        `Slippage assumption ${(state.slippage * 100).toFixed(2)}% per side`,
-        `Pilot data only / no real capital`
-      ]);
-    }
-
-    function renderScores(state, lastEvent) {
-      const tbody = $("scoreRows");
-      tbody.innerHTML = "";
-      Object.entries(NAMES).forEach(([key, label]) => {
-        const p = state.portfolios[key];
-        if (!p) return;
-        const eq = Number(lastEvent.decisions?.[key]?.equity ?? p.cash);
-        const ret = ((eq / state.capital) - 1) * 100;
-        const avgExp = p.observations ? (p.exposure_sum / p.observations) * 100 : 0;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><span class="chip"><span class="legend-swatch" style="background:${COLORS[key] || '#cbd8ea'}"></span>${label}</span></td>
-          <td class="${ret >= 0 ? 'good' : 'bad'}">${pct(ret, 2)}</td>
-          <td>${money(eq)}</td>
-          <td>${pct(avgExp, 2)}</td>
-          <td>${p.orders}</td>
-          <td>${money(p.fees)}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function renderEvents(events) {
-      const list = $("eventsList");
-      list.innerHTML = "";
-      events.slice(-8).reverse().forEach((e) => {
-        const actions = [
-          `Full TACM ${e.decisions?.tacm_full?.action || 'n/a'}`,
-          `No-Tamas ${e.decisions?.tacm_no_tamas?.action || 'n/a'}`,
-          `Plain ${e.decisions?.plain?.action || 'n/a'}`
-        ].join(" / ");
-        const div = document.createElement("div");
-        div.className = "event";
-        div.innerHTML = `
-          <div>
-            <strong>${fmt(e.timestamp)} · ${safe(e.symbol)}</strong>
-            <div class="tiny">Candle open ${fmt(e.candle_open)} · quote ${fmt(e.quote_at)} · gap ${e.skipped_unobserved_hours || 0}h</div>
-            <div class="tiny">${safe(actions)}</div>
-          </div>
-          <div class="right">
-            <div>${safe(e.hash ? e.hash.slice(0, 16) : 'no-hash')}…</div>
-            <div class="tiny">Ledger event #${e.number}</div>
-          </div>
-        `;
-        list.appendChild(div);
-      });
-      if (!events.length) {
-        list.innerHTML = `<div class="event"><div><strong>No forward events found</strong><div class="tiny">This page waits for committed forward-paper records.</div></div><div class="right"><span class="chip">idle</span></div></div>`;
-      }
-    }
-
-    function renderChart(events) {
-      const svg = $("chartSvg");
-      svg.innerHTML = "";
-      if (events.length < 2) {
-        svg.innerHTML = `<text x="30" y="40" class="ylab">Need at least 2 observations to render a time-series view.</text>`;
-        return;
-      }
-
-      // Downsample display only; preserve the full ledger for analysis.
-      const stride = Math.max(1, Math.ceil(events.length / 400));
-      const sample = events.filter((_, i) => i % stride === 0 || i === events.length - 1);
-      const series = PLOT_KEYS.map(key => ({ key, values: sample.map(e => Number(e.decisions?.[key]?.equity)) }));
-      const flat = series.flatMap(s => s.values).filter(Number.isFinite);
-      let min = Math.min(...flat), max = Math.max(...flat);
-      if (!Number.isFinite(min) || !Number.isFinite(max)) return;
-      if (min === max) { min -= 1; max += 1; }
-      const pad = (max - min) * 0.15;
-      min -= pad; max += pad;
-
-      const W = 1000, H = 320, m = { t: 18, r: 18, b: 42, l: 56 };
-      const iw = W - m.l - m.r, ih = H - m.t - m.b;
-      const x = (i) => m.l + (i / (sample.length - 1)) * iw;
-      const y = (v) => m.t + (1 - (v - min) / (max - min)) * ih;
-
-      for (let i = 0; i < 5; i++) {
-        const gy = m.t + (ih / 4) * i;
-        const val = max - ((max - min) / 4) * i;
-        svg.insertAdjacentHTML("beforeend", `<line class="gridline" x1="${m.l}" y1="${gy}" x2="${W - m.r}" y2="${gy}" /><text class="ylab" x="10" y="${gy + 4}">${money(val)}</text>`);
-      }
-
-      sample.forEach((e, i) => {
-        const gx = x(i);
-        if (i !== 0 && i !== sample.length - 1 && i % Math.max(1, Math.ceil(sample.length / 6)) !== 0) return;
-        svg.insertAdjacentHTML("beforeend", `<line class="gridline" x1="${gx}" y1="${m.t}" x2="${gx}" y2="${H - m.b}" />`);
-        if (i < sample.length - 1) {
-          svg.insertAdjacentHTML("beforeend", `<text class="xlab" x="${gx}" y="${H - 14}">${new Date(e.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</text>`);
-        }
-      });
-
-      series.forEach(({ key, values }) => {
-        const points = values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
-        svg.insertAdjacentHTML("beforeend", `<polyline fill="none" stroke="${COLORS[key]}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${points}" />`);
-        values.forEach((v, i) => {
-          svg.insertAdjacentHTML("beforeend", `<circle cx="${x(i)}" cy="${y(v)}" r="2.4" fill="${COLORS[key]}" />`);
-        });
-      });
-    }
-
-    async function load() {
-      const symbol = $("symbolSelect").value;
-      try {
-        const [stateText, ledgerText] = await Promise.all([
-          get(`./forward/${symbol}.state.json`),
-          get(`./forward/${symbol}.ledger.jsonl`)
-        ]);
-        const state = JSON.parse(stateText);
-        const events = ledgerText.trim().split(/\n+/).filter(Boolean).map(line => JSON.parse(line));
-        if (!events.length) throw new Error("Ledger exists but contains no events");
-        if (state.mode !== "FORWARD_PAPER_ONLY" || state.symbol !== symbol ||
-            events.length !== state.events || events.at(-1).hash !== state.last_hash)
-          throw new Error("Ledger/state identity or checkpoint mismatch");
-        if (!events.every((e,i) => e.symbol === symbol && e.number === i+1 &&
-              (i===0 ? e.prev_hash==="GENESIS" : e.prev_hash===events[i-1].hash)))
-          throw new Error("Forward journal sequence is inconsistent");
-        renderHealth(state, events);
-        renderStages(state, events.at(-1));
-        renderScores(state, events.at(-1));
-        renderEvents(events);
-        renderChart(events);
-      } catch (err) {
-        $("coverageBig").textContent = "—";
-        $("coverageNote").textContent = "No verified forward ledger available";
-        $("healthMetrics").innerHTML = `
-          <div class="metric"><div class="label">Status</div><div class="value">Offline</div><div class="delta">${safe(String(err.message || err))}</div></div>
-        `;
-        $("scoreRows").innerHTML = `<tr><td colspan="6">Could not load forward-paper records.</td></tr>`;
-        $("eventsList").innerHTML = `<div class="event"><div><strong>Data load failed</strong><div class="tiny">${safe(String(err.message || err))}</div></div><div class="right"><span class="chip">error</span></div></div>`;
-        $("chartSvg").innerHTML = `<text x="30" y="40" class="ylab">No chart because forward-paper records were unavailable.</text>`;
-      }
-    }
-
-    $("reloadBtn").addEventListener("click", load);
-    $("symbolSelect").addEventListener("change", load);
-    load();
-    setInterval(() => { if (!document.hidden) load(); }, 90000);
-  </script>
+  <div class="content">
+    <section class="panel chart-panel" aria-label="Market and performance chart">
+      <div class="panel-head"><span class="panel-title" id="chartTitle">BTC / USD</span><span class="chart-price" id="lastPrice">—</span><span class="panel-spacer"></span><span class="panel-extra mono" id="chartTime">1H CANDLES</span><div class="tiny-segment" role="group" aria-label="Chart mode"><button type="button" class="active" id="viewMarket" aria-pressed="true">MARKET</button><button type="button" id="viewEquity" aria-pressed="false">EQUITY</button></div></div>
+      <div class="chart-area" id="chartArea"><svg id="primaryChart" viewBox="0 0 900 340" role="img" aria-label="Historical market candles from public data"></svg><div class="chart-label" id="chartNote">KRAKEN · COMPLETED HOURLY CANDLES</div></div>
+    </section>
+    <aside class="rail">
+      <section class="panel brain" aria-label="Supervisory state">
+        <div class="panel-head"><span class="panel-title">TACM / SUPERVISOR</span><span class="panel-spacer"></span><span class="panel-extra mono" id="decisionAt">LAST OBSERVATION</span></div>
+        <div class="brain-top"><div><div class="big-action" id="actionHeadline">—</div><div class="action-sub" id="actionDetail">Awaiting observed decision</div></div><div class="action-light mono" id="phaseDetail">POLICY STATE<br>—</div></div>
+        <div class="signal-route" role="img" aria-label="Illustrative data flow from observations to paper ledger"><span class="route-node">DATA</span><span class="route-link"></span><span class="route-node">AGENTS</span><span class="route-link"></span><span class="route-node current">TACM</span><span class="route-link"></span><span class="route-node">RISK</span><span class="route-link"></span><span class="route-node">PAPER</span></div>
+        <div class="divider"></div>
+        <div class="triad"><div class="subhead"><span>CONTROL STRENGTHS</span><span id="strengthAge">LAST COMPUTED</span></div><div class="triad-row"><span class="triad-name">CRYSTAL</span><div class="triad-track"><div class="triad-fill crystal" id="strCrystal"></div></div><span class="triad-v mono" id="strCrystalV">—</span></div><div class="triad-row"><span class="triad-name">FLOWER</span><div class="triad-track"><div class="triad-fill flower" id="strFlower"></div></div><span class="triad-v mono" id="strFlowerV">—</span></div><div class="triad-row"><span class="triad-name">FLAME</span><div class="triad-track"><div class="triad-fill flame" id="strFlame"></div></div><span class="triad-v mono" id="strFlameV">—</span></div></div>
+        <div class="divider"></div>
+        <div class="agents"><div class="subhead"><span>AGENT PROPOSALS</span><span>CONFIDENCE</span></div><div id="agentRows"><div class="agent-row"><div class="agent-title muted">Awaiting data</div></div></div></div>
+        <div class="gate"><div class="gate-ring" id="gateSymbol">✓</div><div style="min-width:0"><div class="gate-label" id="gateLabel">RISK GATE</div><div class="gate-detail" id="gateDesc">Independent safety policy</div></div></div>
+      </section>
+    </aside>
+  </div>
+  <div class="lower">
+    <section class="panel" aria-label="Supervisor comparisons"><div class="panel-head"><span class="panel-title">STRATEGY COMPARISON</span><span class="panel-extra">INDEPENDENT $10K PAPER ACCOUNTS</span><span class="panel-spacer"></span><span class="panel-extra mono" id="nPolicies">8 POLICIES</span></div><div class="table-wrap"><table class="table"><thead><tr><th>Policy</th><th>Return</th><th>Equity</th><th>Avg. exposure</th><th>Fees</th><th>Last</th></tr></thead><tbody id="scoreRows"><tr><td>Loading portfolios…</td></tr></tbody></table></div></section>
+    <section class="panel" aria-label="Recorded decision events"><div class="panel-head"><span class="panel-title">EVENT STREAM</span><span class="panel-spacer"></span><span class="panel-extra mono" id="eventCount">0 EVENTS</span></div><div class="events" id="eventRows"><div class="event">Awaiting observations…</div></div></section>
+  </div>
+  <div class="warning-bar" id="warning" role="alert"></div>
+  <footer class="footer"><span id="footObservation">OBSERVED MARKET DATA · SIMULATED EXECUTION</span><div class="footer-links"><a href="https://github.com/LurBur/tacm/issues/2" target="_blank" rel="noopener noreferrer">COVERAGE ISSUE ↗</a><a href="https://github.com/LurBur/tacm" target="_blank" rel="noopener noreferrer">SOURCE / AUDIT ↗</a><span>FEE .80% + SLIPPAGE .05% / SIDE</span></div></footer>
+</div>
+<script>
+'use strict';
+const NAMES={tacm_full:'TACM / FULL',tacm_no_tamas:'TACM / NO TAMAS',plain:'PLAIN / 10%',plain_3pct:'PLAIN / 3%',simple_vol_guard:'VOLATILITY GUARD',passive_10pct:'PASSIVE / 10%',passive_3pct:'PASSIVE / 3%',cash:'CASH / CONTROL'};
+const COLORS={tacm_full:'#73d9e9',tacm_no_tamas:'#aea4e0',plain:'#8f9ba4',plain_3pct:'#66737d',simple_vol_guard:'#bd9e83',passive_10pct:'#b3aa7b',passive_3pct:'#857a67',cash:'#4c5960'};
+const els=id=>document.getElementById(id);const money=(n,d=2)=>Number.isFinite(n)?'$'+n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';const pct=(n,d=2)=>Number.isFinite(n)?n.toFixed(d)+'%':'—';const signed=(n,suffix='%',d=2)=>Number.isFinite(n)?(n>0?'+':'')+n.toFixed(d)+suffix:'—';const fmtTime=t=>{const d=new Date(t);return Number.isNaN(d.getTime())?'—':d.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})};const ageM=t=>Math.max(0,(Date.now()-new Date(t).getTime())/60000);const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));const ns='http://www.w3.org/2000/svg';const safeNum=n=>typeof n==='number'&&Number.isFinite(n);const namedClass=n=>n<0?'neg':n>0?'pos':'';
+let selected='BTCUSD',mode='market',loading=0,current=null,focusIndex=-1;
+function el(tag,attrs={},text){const x=document.createElement(tag);for(const [k,v] of Object.entries(attrs))x.setAttribute(k,v);if(text!==undefined)x.textContent=String(text);return x;}
+function node(parent,tag,attrs={}){const x=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))x.setAttribute(k,String(v));parent.appendChild(x);return x;}
+function mark(id,text,cls=''){const x=els(id);x.textContent=text;x.classList.remove('pos','neg');if(cls)x.classList.add(cls);}
+function hideWarning(){els('warning').classList.remove('show');els('warning').textContent='';}
+function showWarning(text){els('warning').textContent=text;els('warning').classList.add('show');}
+function setAsset(symbol){if(!['BTCUSD','ETHUSD'].includes(symbol))return;selected=symbol;for(const [sym,id] of [['BTCUSD','mBTC'],['ETHUSD','mETH']]){els(id).classList.toggle('active',sym===symbol);els(id).setAttribute('aria-pressed',String(sym===symbol));}load();}
+function setMode(next){mode=next;for(const [m,id] of [['market','viewMarket'],['equity','viewEquity']]){els(id).classList.toggle('active',m===next);els(id).setAttribute('aria-pressed',String(m===next));}if(current)drawChart(current);}
+async function getJSON(path){const r=await fetch(path+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error(path+' returned '+r.status);return r.json();}
+async function getLedger(path){const r=await fetch(path+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error(path+' returned '+r.status);return (await r.text()).trim().split('\n').filter(Boolean).map(s=>JSON.parse(s));}
+function validate(state,events,snapshot){if(state?.mode!=='FORWARD_PAPER_ONLY'||state.symbol!==selected||!Array.isArray(events)||events.length===0||state.events!==events.length||state.last_hash!==events.at(-1)?.hash)throw new Error('Paper state and journal mismatch');for(let i=0;i<events.length;i++){if(events[i].symbol!==selected||events[i].number!==i+1||events[i].prev_hash!==(i===0?'GENESIS':events[i-1].hash))throw new Error('Paper audit sequence mismatch');}if(snapshot?.mode!=='market'||snapshot?.symbol!==selected||!Array.isArray(snapshot.candles)||snapshot.candles.length<50||snapshot.paper_only!==true)throw new Error('Market candle snapshot unavailable');}
+function summary(data){const {state,events,snapshot}=data,ev=events.at(-1),t=ev.decisions.tacm_full,plain=ev.decisions.plain;const eq=t.equity,ret=(eq/state.capital-1)*100,pReturn=(plain.equity/state.capital-1)*100,gaps=events.reduce((s,x)=>s+(Number(x.skipped_unobserved_hours)||0),0),coverage=events.length/(events.length+gaps)*100,mid=(ev.bid+ev.ask)/2;return {ev,t,plain,eq,ret,pReturn,gaps,coverage,mid,age:ageM(ev.quote_at)};}
+function renderSummary(d){const {state,events,snapshot}=d,{ev,t,eq,ret,pReturn,coverage,mid,age,gaps}=summary(d);mark('kPrice',money(mid,2));mark('kPriceMeta','PUBLIC BID / ASK MID');mark('kEquity',money(eq));mark('kReturn',signed(ret),namedClass(ret));mark('kDelta',signed(ret-pReturn,' pp'),namedClass(ret-pReturn));mark('kExposure',pct(t.exposure*100));mark('kCoverage',pct(coverage,1),coverage>=95?'pos':'neg');mark('kCoverageMeta',events.length+' OBS / '+gaps+' MISSED');mark('lastPrice',money(mid,2));mark('chartTitle',selected==='BTCUSD'?'BTC / USD':'ETH / USD');mark('chartTime',mode==='market'?'1H · PUBLIC MARKET':'FORWARD · PAPER');mark('eventCount',events.length+' EVENTS');mark('footObservation','QUOTE '+fmtTime(ev.quote_at)+' · CANDLE '+fmtTime(ev.candle_open));const fresh=Number.isFinite(age)&&age<=95;els('freshDot').className='status-dot'+(fresh?'':' warn');mark('freshText',fresh?('OBSERVED '+Math.round(age)+'M AGO'):('STALE '+Math.round(age)+'M'));const currentAction=String(t.action||'hold').toUpperCase();const gap=ev.skipped_unobserved_hours>0;mark('actionHeadline',gap?'GAP / FLAT':currentAction,currentAction==='buy'&&!gap?'pos':currentAction==='sell'?'neg':'');mark('actionDetail',gap?ev.skipped_unobserved_hours+' unobserved hour(s) · policy forced flat':('Requested '+pct(t.requested*100,1)+' / allowed '+pct(t.allowed*100,1)));mark('phaseDetail',(gap?'NOT EVALUATED':'LAST OBSERVED')+'\n'+fmtTime(ev.timestamp));els('phaseDetail').style.whiteSpace='pre-line';mark('decisionAt',fmtTime(ev.timestamp).toUpperCase());const fullGov=state.governors?.tacm_full;const strengths=fullGov?.prev_strengths||{};for(const s of ['Crystal','Flower','Flame']){const v=safeNum(strengths[s])?clamp(strengths[s],0,1):null;els('str'+s).style.width=(v===null?0:v*100)+'%';mark('str'+s+'V',v===null?'—':Math.round(v*100)+'%');}mark('strengthAge',gap?'PRIOR ASSESSMENT':'LAST ASSESSMENT');renderAgents(ev.signals||{});const reason=String(t.gate||'unknown');const restricted=reason.includes('halt')||reason.includes('stop')||reason.includes('missed')||reason.includes('cap')||reason.includes('pause');els('gateSymbol').classList.toggle('warn',restricted);mark('gateSymbol',restricted?'!':'✓');mark('gateLabel',restricted?'RISK / INTERVENTION':'RISK / POLICY');mark('gateDesc',reason.replaceAll('_',' ').toUpperCase());renderScore(state,ev);renderEvents(events);if(coverage<95)showWarning('DIAGNOSTIC PILOT · '+pct(coverage,1)+' observation coverage. Performance is not validated; missing hours can force simulated exits.');else hideWarning();}
+function renderAgents(signals){const root=els('agentRows');root.replaceChildren();for(const [key,label] of [['momentum_12_48','MOMENTUM / 12:48'],['mean_revert_z24','MEAN REVERT / Z24']]){const s=signals[key]||{},row=el('div',{class:'agent-row'}),left=el('div'),title=el('div',{class:'agent-title'},label),meta=el('span',{class:'agent-meta mono'},String(s.evidence||'NO SIGNAL')),conf=el('span',{class:'agent-confidence mono'},safeNum(s.confidence)?pct(s.confidence*100,0):'—'),side=el('span',{class:'side-pill'+(s.target>0?'':' flat')},s.target>0?'LONG':'FLAT');left.append(title,meta);row.append(left,conf,side);root.appendChild(row);}}
+function renderScore(state,ev){const tbody=els('scoreRows');tbody.replaceChildren();for(const [key,name] of Object.entries(NAMES)){const p=state.portfolios[key],d=ev.decisions[key];if(!p||!d)continue;const eq=safeNum(d.equity)?d.equity:NaN,ret=(eq/state.capital-1)*100,avg=p.observations?p.exposure_sum/p.observations*100:0,row=el('tr',{class:key==='tacm_full'?'focus':''});const label=el('td'),tag=el('span',{class:'strategy-name'}),dot=el('span',{class:'strat-dot'+(key.startsWith('tacm')?' supervisor':key==='cash'||key.startsWith('passive')?' reference':'')});tag.append(dot,document.createTextNode(name));label.appendChild(tag);row.append(label,el('td',{class:namedClass(ret)+' mono'},signed(ret)),el('td',{class:'mono'},money(eq)),el('td',{class:'mono'},pct(avg,1)),el('td',{class:'mono'},money(p.fees)),el('td',{class:'small-action'},String(d.action||'hold').toUpperCase()));tbody.appendChild(row);}}
+function renderEvents(events){const root=els('eventRows');root.replaceChildren();for(const evt of events.slice(-6).reverse()){const d=evt.decisions?.tacm_full||{},gap=Number(evt.skipped_unobserved_hours)||0,row=el('div',{class:'event'}),dot=el('span',{class:'evt-mark'+(gap?' gap':d.action==='buy'?' buy':d.action==='sell'?' sell':'')}),data=el('div'),action=gap?'MISSED INTERVAL':('TACM / '+String(d.action||'hold').toUpperCase()),title=el('div',{class:'evt-name'},action),detail=el('div',{class:'evt-meta mono'},gap?'GAP '+gap+'H · FORCED FLAT':'EXPOSURE '+pct((d.exposure||0)*100,1)+' · '+String(d.agent||'—')),time=el('div',{class:'evt-time mono'},fmtTime(evt.quote_at));data.append(title,detail);row.append(dot,data,time);root.appendChild(row);}}
+function drawChart(data){const svg=els('primaryChart');svg.replaceChildren();const {snapshot,events}=data;const values=mode==='market'?snapshot.candles.slice(-(window.innerWidth<600?64:100)):events;const W=Math.max(320,Math.round(els('chartArea').clientWidth-20)),H=Math.max(205,Math.round(els('chartArea').clientHeight-12));svg.setAttribute('viewBox',`0 0 ${W} ${H}`);const m={l:12,r:window.innerWidth<600?57:78,t:15,b:30},iw=W-m.l-m.r,ih=H-m.t-m.b;const grid='#1d2226',text='#6b7780',up='#72c7aa',down='#d67f84';if(mode==='equity'&&values.length<2){node(svg,'text',{x:35,y:110,fill:'#87929b','font-size':13}).textContent='Forward equity plot begins after two observations';return;}if(!values.length){node(svg,'text',{x:35,y:110,fill:text,'font-size':13}).textContent='Market data unavailable';return;}
+let lo,hi;if(mode==='market'){lo=Math.min(...values.map(v=>Number(v[3])));hi=Math.max(...values.map(v=>Number(v[2])));}else{const keys=['tacm_full','tacm_no_tamas','plain','passive_3pct'];lo=Math.min(...values.flatMap(e=>keys.map(k=>Number(e.decisions?.[k]?.equity)).filter(Number.isFinite)));hi=Math.max(...values.flatMap(e=>keys.map(k=>Number(e.decisions?.[k]?.equity)).filter(Number.isFinite)));}if(!Number.isFinite(lo)||!Number.isFinite(hi)){return;}let range=Math.max(hi-lo,hi*.001,1),pad=range*.12;lo-=pad;hi+=pad;const y=v=>m.t+(hi-v)/(hi-lo)*ih,x=i=>m.l+(i+.5)/values.length*iw;for(let i=0;i<5;i++){const v=hi-(hi-lo)/4*i,yy=y(v);node(svg,'line',{x1:m.l,y1:yy,x2:W-m.r,y2:yy,stroke:grid,'stroke-width':1});node(svg,'text',{x:W-m.r+9,y:yy+3,fill:text,'font-size':10,'font-family':'ui-monospace,monospace'}).textContent=mode==='market'?money(v,0):money(v,0);}
+for(let i=0;i<(W<480?3:5);i++){const count=W<480?3:5,k=Math.floor((values.length-1)*i/(count-1)),xx=x(k),v=values[k],date=new Date(mode==='market'?Number(v[0])*1000:v.timestamp);const s=date.toLocaleString([],{month:'short',day:'numeric',hour:'2-digit'});node(svg,'line',{x1:xx,y1:m.t,x2:xx,y2:H-m.b,stroke:'#11161a','stroke-width':1});node(svg,'text',{x:xx,y:H-7,fill:text,'font-size':10,'text-anchor':'middle'}).textContent=s;}
+if(mode==='market'){const width=Math.max(2,iw/values.length*.65);values.forEach((bar,i)=>{const [_,o,h,l,c]=bar.map(Number),xx=x(i),cc=c>=o?up:down;node(svg,'line',{x1:xx,y1:y(h),x2:xx,y2:y(l),stroke:cc,'stroke-width':1.1});const top=Math.min(y(o),y(c)),height=Math.max(1.4,Math.abs(y(c)-y(o)));node(svg,'rect',{x:xx-width/2,y:top,width,height,fill:cc,opacity:.85});});const closes=snapshot.candles.map(b=>Number(b[4]));for(const [period,color] of [[12,'#75d8e7'],[48,'#b1a5e0']]){const pts=[];const offset=closes.length-values.length;for(let j=0;j<values.length;j++){const idx=offset+j;if(idx+1<period)continue;let sum=0;for(let k=idx-period+1;k<=idx;k++)sum+=closes[k];pts.push(x(j)+','+y(sum/period));}if(pts.length)node(svg,'polyline',{points:pts.join(' '),stroke:color,'stroke-width':1.55,'stroke-opacity':.85,fill:'none'});}node(svg,'text',{x:20,y:23,fill:'#75d8e7','font-size':10}).textContent='SMA 12';node(svg,'text',{x:80,y:23,fill:'#b1a5e0','font-size':10}).textContent='SMA 48';const last=Number(values.at(-1)[4]);node(svg,'line',{x1:m.l,y1:y(last),x2:W-m.r,y2:y(last),stroke:'#77d8e9','stroke-width':.8,'stroke-dasharray':'3 5',opacity:.55});}
+else{const tracks=[['plain','#7b8690'],['passive_3pct','#c6a46e'],['tacm_no_tamas','#a6a0db'],['tacm_full','#72d7e7']];for(const [key,color] of tracks){const pts=values.map((e,i)=>{const v=Number(e.decisions?.[key]?.equity);return Number.isFinite(v)?x(i)+','+y(v):null}).filter(Boolean);if(pts.length<2)continue;node(svg,'polyline',{points:pts.join(' '),stroke:color,'stroke-width':key==='tacm_full'?2.5:1.6,fill:'none',opacity:key==='tacm_full'?1:.82,'stroke-linejoin':'round'});let lastVal=Number(values.at(-1).decisions?.[key]?.equity);if(Number.isFinite(lastVal))node(svg,'circle',{cx:x(values.length-1),cy:y(lastVal),r:key==='tacm_full'?3:2,fill:color});}let offs=18;for(const [name,color] of tracks){node(svg,'line',{x1:offs,y1:22,x2:offs+15,y2:22,stroke:color,'stroke-width':2});node(svg,'text',{x:offs+20,y:25,fill:'#96a0a7','font-size':10}).textContent=name==='tacm_full'?'TACM FULL':name==='tacm_no_tamas'?'NO TAMAS':name==='passive_3pct'?'PASSIVE 3%':'PLAIN';offs+=name==='tacm_no_tamas'?112:101;}}
+}
+async function load(){const token=++loading,symbol=selected;mark('freshText','SYNCING…');try{const [state,events,snapshot]=await Promise.all([getJSON('./forward/'+symbol+'.state.json'),getLedger('./forward/'+symbol+'.ledger.jsonl'),getJSON('./data/'+symbol+'.json')]);if(token!==loading)return;validate(state,events,snapshot);current={state,events,snapshot};renderSummary(current);drawChart(current);}catch(err){if(token!==loading)return;mark('freshText','DATA UNAVAILABLE');els('freshDot').className='status-dot err';showWarning('DATA UNAVAILABLE · '+String(err.message||err)+'. No estimate was substituted.');}}
+els('mBTC').addEventListener('click',()=>setAsset('BTCUSD'));els('mETH').addEventListener('click',()=>setAsset('ETHUSD'));els('viewMarket').addEventListener('click',()=>setMode('market'));els('viewEquity').addEventListener('click',()=>setMode('equity'));els('refreshBtn').addEventListener('click',load);window.addEventListener('resize',()=>{if(current)drawChart(current);});load();setInterval(()=>{if(!document.hidden)load();},90000);
+</script>
 </body>
 </html>
