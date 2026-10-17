@@ -7,7 +7,10 @@ on:
     paths:
       - '.github/workflows/crypto-governor-hourly.yml'
   schedule:
-    - cron: '12 * * * *'
+    # Retry observation four times each hour; forward_paper.py records only
+    # the first valid quote for each newly completed 1-hour market candle.
+    # GitHub cron is best-effort, not a guaranteed 15-minute timer.
+    - cron: '7,22,37,52 * * * *'
 permissions:
   contents: write
 concurrency:
