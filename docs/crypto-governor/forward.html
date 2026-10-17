@@ -21,6 +21,8 @@ td:first-child,th:first-child{text-align:left}th{font-size:11px;color:#aec2d5}
 .metric strong{display:block;font-size:20px;padding-top:6px;overflow-wrap:anywhere}
 .chart{width:100%;height:220px}svg{display:block;width:100%;height:100%}
 .line{font-size:12px;color:#abc0cf;margin:4px 0}
+.quality{padding:14px;border:1px solid #be684b;border-radius:10px;background:#34241e;color:#ffd5b5;line-height:1.55;margin:12px 0}
+.quality.good{border-color:#487a69;background:#15332c;color:#ade9cc}
 #status{min-height:16px}
 @media(max-width:680px){h1{font-size:21px}th,td{padding:9px 5px}}
 </style></head><body><main>
@@ -31,6 +33,7 @@ td:first-child,th:first-child{text-align:left}th{font-size:11px;color:#aec2d5}
 <label for="symbol">Market</label><select id="symbol"><option value="BTCUSD">BTC / USD</option><option value="ETHUSD">ETH / USD</option></select>
 <button id="reload">Reload evidence</button><span id="status" role="status"></span>
 </div>
+<section id="quality" class="quality" role="status">PILOT DATA ONLY: research validation is blocked pending verification of hourly observation coverage. See <a href="https://github.com/LurBur/tacm/issues/2">issue #2</a>.</section>
 <section class="cards" id="facts"></section>
 <section class="panel"><h2>Paper portfolio comparison</h2><div style="overflow:auto"><table>
 <thead><tr><th>Supervisor</th><th>Net return</th><th>Virtual equity</th><th>Avg exposure</th><th>Orders</th><th>Est. fees</th></tr></thead>
@@ -82,8 +85,17 @@ get("./forward/"+symbol+".state.json"),get("./forward/"+symbol+".ledger.jsonl")]
 const s=JSON.parse(stateText),events=journalText.trim().split("\n").filter(Boolean).map(JSON.parse);
 if(s.mode!=="FORWARD_PAPER_ONLY"||s.symbol!==symbol||events.length!==s.events||events.at(-1).hash!==s.last_hash)throw Error("State and evidence journal disagree");
 const last=events.at(-1);const gaps=events.reduce((v,e)=>v+Number(e.skipped_unobserved_hours||0),0);
+const expected=events.length+gaps;
+const coverage=expected>0?events.length/expected:0;
+const recentAgeHours=(Date.now()-Date.parse(last.quote_at))/3600000;
+const quality=$("quality");quality.classList.remove("good");
+const coverageMsg="Observed "+events.length+"/"+expected+" hourly slots ("+pct(coverage*100)+" coverage); "+
+"missed "+gaps+". Latest quote age "+recentAgeHours.toFixed(1)+" hours.";
+quality.textContent="PILOT / NOT VALIDATED: "+coverageMsg+
+" Continue collecting diagnostic data, but do not interpret P&L as proof of TACM value. The official 60–90 day window has NOT started. ";
+const issue=document.createElement("a");issue.href="https://github.com/LurBur/tacm/issues/2";issue.textContent="Reliability gate and remediation";quality.append(issue);
 $("facts").append(card("First paper observation",fmt(s.started_at)),card("Latest public quote",fmt(last.quote_at)),
-card("Logged hours",s.events),card("Unobserved hours",gaps),card("Virtual initial capital",money(s.capital)),card("Per-side fee assumption",pct(s.fee*100)));
+card("Logged hours",s.events),card("Unobserved hours",gaps),card("Observation coverage",pct(coverage*100)),card("Virtual initial capital",money(s.capital)),card("Per-side fee assumption",pct(s.fee*100)));
 for(const [k,label] of Object.entries(names)){
 const p=s.portfolios[k];if(!p)continue;
 const eq=Number(last.decisions[k]?.equity);
