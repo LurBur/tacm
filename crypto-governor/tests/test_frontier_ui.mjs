@@ -1,30 +1,40 @@
-// Smoke tests for single-page TACM Frontier Console (no external test dependencies).
+// TACM Operations Console static guardrails. No third-party dependencies.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
-const html = readFileSync("docs/crypto-governor/index.html", "utf8");
-const old = readFileSync("docs/crypto-governor/forward.html", "utf8");
-const start = html.indexOf("<script>");
-const end = html.lastIndexOf("</script>");
-assert(start >= 0 && end > start, "Frontier page must have a locally parseable script");
-const script = html.slice(start + "<script>".length, end);
-new vm.Script(script, {filename:"TACM Frontier Console inline JS"});
-for(const id of ["coverageBig","coverageFill","coverageNote","healthMetrics","symbolSelect","stageMarket",
-"stageAgents","stageSupervisor","stageRisk","stageLedger","scoreRows","eventsList","chartSvg",
-"reloadBtn","lastRefresh","tickerTrack","heroSymbol"]){
-  assert(html.includes('id="'+id+'"'), "Missing live-data element "+id);
+const html=readFileSync("docs/crypto-governor/index.html","utf8");
+const redirect=readFileSync("docs/crypto-governor/forward.html","utf8");
+const start=html.indexOf("<script>"),stop=html.lastIndexOf("</script>");
+assert(start>=0 && stop>start,"Self-contained JavaScript must exist");
+new vm.Script(html.slice(start+8,stop),{filename:"tacm-operations-console.js"});
+
+for(const id of [
+  "mBTC","mETH","refreshBtn","freshDot","freshText",
+  "kPrice","kEquity","kReturn","kDelta","kExposure","kCoverage","kCoverageMeta",
+  "primaryChart","viewMarket","viewEquity","lastPrice",
+  "actionHeadline","actionDetail","decisionAt","phaseDetail",
+  "strCrystal","strFlower","strFlame","strCrystalV","strFlowerV","strFlameV",
+  "agentRows","gateLabel","gateDesc","scoreRows","eventRows","warning"
+]){
+  assert(html.includes('id="'+id+'"'),"Required operational element missing: "+id);
 }
-assert(html.includes("./forward/"), "Relative forward paper ledger data is required");
-assert(html.includes("PLOT_KEYS"), "Supervisor equity comparison is required");
-assert(html.includes("setInterval"), "The display must periodically refresh");
-assert(html.includes("prefers-reduced-motion"), "Respect motion sensitivity");
-assert(html.includes("grid-template-columns: repeat(4, minmax(0, 1fr) 14px)"),
-  "Five-stage animated pipeline should fit on one desktop row");
-assert(html.includes("events.at(-1).hash !== state.last_hash"), "State / journal mismatch guard required");
-assert(html.includes("one") || html.includes("One"), "Describe the one-decision-per-hour research rule");
-assert(!html.includes("api.kraken.com/0/private"), "No authenticated exchange API in UI");
-assert(!html.includes("Place order"), "Research UI must have no trading controls");
-assert(old.includes('http-equiv="refresh"') && old.includes('url=./'), "Old URL must redirect");
-assert(!old.includes('id="scoreRows"'), "Old dashboard must not coexist");
-console.log("TACM Frontier static/JS checks passed.");
+assert(html.includes("background:var(--bg)") && html.includes("--bg:#050607"),"Use true black console canvas");
+assert(html.includes("grid-template-columns:repeat(6,minmax(0,1fr))"),"Six glanceable KPIs");
+assert(html.includes("grid-template-columns:minmax(0,1.7fr) minmax(310px,.81fr)"),"Chart/rail desktop grid");
+assert(html.includes("./forward/") && html.includes("./data/"),"Use forward records AND completed Kraken candles");
+assert(html.includes("state.last_hash!==events.at(-1)?.hash"),"Validate journal/state checkpoint");
+assert(html.includes("events[i].prev_hash"),"Check journal continuity");
+assert(html.includes("skipped_unobserved_hours"),"Expose missing observations");
+assert(html.includes("prev_strengths"),"Read persisted TACM strengths");
+assert(html.includes("SMA 12") && html.includes("SMA 48"),"Market chart must show transparent indicators");
+assert(html.includes("setInterval"),"Refresh from public paper logs");
+assert(html.includes("prefers-reduced-motion"),"Respect reduced motion preferences");
+assert(html.includes("PAPER · PILOT"),"Make simulation/pilot mode clearly visible");
+assert(html.includes("DIAGNOSTIC PILOT"),"Do not misstate evidence validity");
+assert(!html.includes("UI goal") && !html.includes("Best next") && !html.includes("What this means"),
+       "Do not publish design commentary on the operator UI");
+assert(!html.includes("api.kraken.com/0/private"),"No private exchange order endpoints");
+assert(!html.includes("Place order"),"This interface has no real trading controls");
+assert(redirect.includes('http-equiv="refresh"') && redirect.includes("url=./"),"Keep just one live dashboard");
+console.log("TACM black operator console: JS syntax + single-page/market-data guardrails passed");
