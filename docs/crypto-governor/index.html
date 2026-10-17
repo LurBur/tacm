@@ -540,7 +540,7 @@
           <div>
             <strong>${fmt(e.timestamp)} · ${safe(e.symbol)}</strong>
             <div class="tiny">Candle open ${fmt(e.candle_open)} · quote ${fmt(e.quote_at)} · gap ${e.skipped_unobserved_hours || 0}h</div>
-            <div class="tiny">${actions}</div>
+            <div class="tiny">${safe(actions)}</div>
           </div>
           <div class="right">
             <div>${safe(e.hash ? e.hash.slice(0, 16) : 'no-hash')}…</div>
@@ -630,7 +630,7 @@
           <div class="metric"><div class="label">Status</div><div class="value">Offline</div><div class="delta">${safe(String(err.message || err))}</div></div>
         `;
         $("scoreRows").innerHTML = `<tr><td colspan="6">Could not load forward-paper records.</td></tr>`;
-        $("eventsList").innerHTML = `<div class="event"><div><strong>Data load failed</strong><div class="tiny">${String(err.message || err)}</div></div><div class="right"><span class="chip">error</span></div></div>`;
+        $("eventsList").innerHTML = `<div class="event"><div><strong>Data load failed</strong><div class="tiny">${safe(String(err.message || err))}</div></div><div class="right"><span class="chip">error</span></div></div>`;
         $("chartSvg").innerHTML = `<text x="30" y="40" class="ylab">No chart because forward-paper records were unavailable.</text>`;
       }
     }
