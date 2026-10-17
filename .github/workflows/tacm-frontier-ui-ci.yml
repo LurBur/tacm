@@ -1,0 +1,31 @@
+name: TACM Frontier Console UI checks
+on:
+  pull_request:
+    paths:
+      - 'docs/crypto-governor/index.html'
+      - 'docs/crypto-governor/forward.html'
+      - 'crypto-governor/tests/test_frontier_ui.mjs'
+      - '.github/workflows/tacm-frontier-ui-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate the single modern UI, relative data contract and JavaScript syntax
+        run: node crypto-governor/tests/test_frontier_ui.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify backend trading research remains intact
+        run: python -m unittest discover -s crypto-governor/tests -v
