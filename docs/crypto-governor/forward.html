@@ -1,121 +1,15 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TACM / Forward Paper Evidence</title>
-<style>
-:root{color-scheme:dark;font:14px system-ui,Arial,sans-serif;background:#08121d;color:#e7edf5}
-body{margin:0;background:radial-gradient(circle at 80% 0,#183245,#08121d 45%);min-height:100vh}
-main{max-width:1050px;margin:0 auto;padding:22px 15px 55px}h1{font-size:26px;margin:6px 0}
-h2{font-size:17px;margin:0 0 12px}p{line-height:1.55}
-a{color:#8cdedb}header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
-.tag{display:inline-block;border:1px solid #8a574c;border-radius:7px;background:#2b2224;color:#ffd9a9;padding:7px 10px;font-size:11px;font-weight:700}
-.small,.muted{color:#9cacc2;font-size:12px}
-.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:20px 0}
-button,select{background:#192a3d;color:#e9f3f6;border:1px solid #456070;padding:10px;border-radius:9px}
-button{cursor:pointer}button:focus,select:focus{outline:2px solid #58c7be}
-.panel{border:1px solid #293c50;background:#121f30;border-radius:13px;padding:16px;margin:15px 0;overflow:auto}
-table{width:100%;border-collapse:collapse;min-width:670px}
-td,th{border-bottom:1px solid #2b3c4c;padding:10px 8px;text-align:right;white-space:nowrap}
-td:first-child,th:first-child{text-align:left}th{font-size:11px;color:#aec2d5}
-.good{color:#65dfa9}.bad{color:#ff91a3}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.metric{border:1px solid #2b4254;border-radius:10px;padding:12px;background:#17293a}
-.metric strong{display:block;font-size:20px;padding-top:6px;overflow-wrap:anywhere}
-.chart{width:100%;height:220px}svg{display:block;width:100%;height:100%}
-.line{font-size:12px;color:#abc0cf;margin:4px 0}
-.quality{padding:14px;border:1px solid #be684b;border-radius:10px;background:#34241e;color:#ffd5b5;line-height:1.55;margin:12px 0}
-.quality.good{border-color:#487a69;background:#15332c;color:#ade9cc}
-#status{min-height:16px}
-@media(max-width:680px){h1{font-size:21px}th,td{padding:9px 5px}}
-</style></head><body><main>
-<header><div><div class="tag">RESEARCH ONLY · PAPER TRADES · NO REAL MONEY</div>
-<h1>TACM / Forward Evidence</h1><p class="muted">Persistent, timestamped, public-quote paper observations. This is not an exchange account.</p></div>
-<a href="./">Historical research dashboard</a></header>
-<div class="controls">
-<label for="symbol">Market</label><select id="symbol"><option value="BTCUSD">BTC / USD</option><option value="ETHUSD">ETH / USD</option></select>
-<button id="reload">Reload evidence</button><span id="status" role="status"></span>
-</div>
-<section id="quality" class="quality" role="status">PILOT DATA ONLY: research validation is blocked pending verification of hourly observation coverage. See <a href="https://github.com/LurBur/tacm/issues/2">issue #2</a>.</section>
-<section class="cards" id="facts"></section>
-<section class="panel"><h2>Paper portfolio comparison</h2><div style="overflow:auto"><table>
-<thead><tr><th>Supervisor</th><th>Net return</th><th>Virtual equity</th><th>Avg exposure</th><th>Orders</th><th>Est. fees</th></tr></thead>
-<tbody id="rows"></tbody></table></div>
-<p class="muted">Same original capital, different realized exposure. Better return by itself does not prove supervisor skill. Fees, spreads and modelled slippage reduce virtual equity.</p></section>
-<section class="panel"><h2>Forward observations</h2><div class="chart" id="chart"></div><p class="small" id="chartNote">Awaiting logged observations.</p></section>
-<section class="panel"><h2>Most recent decisions</h2><div id="events"></div></section>
-<section class="panel"><h2>Evidence standard and limits</h2>
-<p>Signals use only completed Kraken 1-hour candles. Simulated fills use the bid/ask quote observed during a GitHub job. There is no guarantee those fills would be obtainable from an exchange. Scheduled observations may be late or missing; gaps are recorded instead of being backfilled. This experiment does not trade or forecast profitability.</p>
-<p class="muted">Published observations and state checkpoints are available in the repository. No exchange API credentials or private account data are used.</p>
-<a href="https://github.com/LurBur/tacm/tree/main/docs/crypto-governor/forward">View audit records on GitHub</a></section>
-</main>
-<script>
-"use strict";
-const names={plain:"Plain (10% cap)",plain_3pct:"Plain (3% cap)",simple_vol_guard:"Simple volatility guard",
-tacm_full:"TACM full",tacm_no_tamas:"TACM without Tamas",cash:"Cash",
-passive_10pct:"Buy & hold (10%)",passive_3pct:"Buy & hold (3%)"};
-const $=id=>document.getElementById(id);
-const money=x=>Number.isFinite(x)?"$"+x.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"—";
-const pct=x=>Number.isFinite(x)?x.toFixed(3)+"%":"—";
-const node=(tag,text,cls)=>{const el=document.createElement(tag);el.textContent=text||"";if(cls)el.className=cls;return el};
-const fmt=t=>{try{return new Date(t).toLocaleString()}catch(_){return String(t)}};
-async function get(url){const r=await fetch(url+"?v="+Date.now(),{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);return r.text()}
-function card(label,value){const c=node("div","","metric");c.append(node("div",label,"muted"),node("strong",String(value)));return c}
-function lineChart(events){
-const box=$("chart");box.replaceChildren();
-if(events.length<2){box.append(node("p","A trend chart requires at least two separate forward observations.","muted"));return}
-const curves=["plain","plain_3pct","tacm_full","tacm_no_tamas","passive_3pct"];
-const series=curves.map(k=>({name:k,values:events.map(e=>e.decisions&&e.decisions[k]?Number(e.decisions[k].equity):NaN)}));
-const valid=series.flatMap(s=>s.values).filter(Number.isFinite);
-if(!valid.length)return;
-let lo=Math.min(...valid),hi=Math.max(...valid);const span=Math.max(1,hi-lo);
-lo-=span*.10;hi+=span*.10;
-const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("viewBox","0 0 800 200");svg.setAttribute("role","img");svg.setAttribute("aria-label","Paper portfolio equity by sequential observation");
-const colors=["#9eafb9","#ffc076","#67d8a6","#66a5ff","#f383a6"];
-series.forEach((s,i)=>{if(!s.values.every(Number.isFinite))return;const poly=document.createElementNS("http://www.w3.org/2000/svg","polyline");poly.setAttribute("fill","none");poly.setAttribute("stroke",colors[i]);poly.setAttribute("stroke-width","2.5");
-poly.setAttribute("points",s.values.map((v,j)=>(30+j*740/(s.values.length-1))+","+(180-(v-lo)/(hi-lo)*150)).join(" "));
-svg.appendChild(poly)});
-box.appendChild(svg);
-$("chartNote").textContent="From "+fmt(events[0].timestamp)+" to "+fmt(events[events.length-1].timestamp)+
-" · Lines represent plain 10%, plain 3%, TACM, no-Tamas and passive 3%, respectively. Not exposure matched.";
-}
-async function load(){
-const symbol=$("symbol").value;$("status").textContent="Checking published paper data…";
-$("facts").replaceChildren();$("rows").replaceChildren();$("chart").replaceChildren();$("events").replaceChildren();
-try{
-const [stateText,journalText]=await Promise.all([
-get("./forward/"+symbol+".state.json"),get("./forward/"+symbol+".ledger.jsonl")]);
-const s=JSON.parse(stateText),events=journalText.trim().split("\n").filter(Boolean).map(JSON.parse);
-if(s.mode!=="FORWARD_PAPER_ONLY"||s.symbol!==symbol||events.length!==s.events||events.at(-1).hash!==s.last_hash)throw Error("State and evidence journal disagree");
-const last=events.at(-1);const gaps=events.reduce((v,e)=>v+Number(e.skipped_unobserved_hours||0),0);
-const expected=events.length+gaps;
-const coverage=expected>0?events.length/expected:0;
-const recentAgeHours=(Date.now()-Date.parse(last.quote_at))/3600000;
-const quality=$("quality");quality.classList.remove("good");
-const coverageMsg="Observed "+events.length+"/"+expected+" hourly slots ("+pct(coverage*100)+" coverage); "+
-"missed "+gaps+". Latest quote age "+recentAgeHours.toFixed(1)+" hours.";
-quality.textContent="PILOT / NOT VALIDATED: "+coverageMsg+
-" Continue collecting diagnostic data, but do not interpret P&L as proof of TACM value. The official 60–90 day window has NOT started. ";
-const issue=document.createElement("a");issue.href="https://github.com/LurBur/tacm/issues/2";issue.textContent="Reliability gate and remediation";quality.append(issue);
-$("facts").append(card("First paper observation",fmt(s.started_at)),card("Latest public quote",fmt(last.quote_at)),
-card("Logged hours",s.events),card("Unobserved hours",gaps),card("Observation coverage",pct(coverage*100)),card("Virtual initial capital",money(s.capital)),card("Per-side fee assumption",pct(s.fee*100)));
-for(const [k,label] of Object.entries(names)){
-const p=s.portfolios[k];if(!p)continue;
-const eq=Number(last.decisions[k]?.equity);
-const tr=document.createElement("tr");
-const cells=[label,pct(100*(eq/s.capital-1)),money(eq),pct(100*p.exposure_sum/Math.max(1,p.observations)),String(p.orders),money(p.fees)];
-cells.forEach((v,i)=>tr.appendChild(node("td",v,i===1?(eq>=s.capital?"good":"bad"):"")));
-$("rows").appendChild(tr);
-}
-lineChart(events);
-for(const e of events.slice(-8).reverse()){
-const wrap=node("div","","line");wrap.append(node("strong",fmt(e.timestamp)+" | "+String(e.symbol)+" | gap "+(e.skipped_unobserved_hours||0)+" hours"));
-wrap.append(node("div","Full TACM: "+(e.decisions?.tacm_full?.action||"unknown")+" | Plain: "+(e.decisions?.plain?.action||"unknown")+" | Last hash: "+String(e.hash).slice(0,16),"muted"));
-$("events").append(wrap);
-}
-$("status").textContent="Public paper evidence loaded. No live orders.";
-}catch(e){
-$("status").textContent="No verified forward ledger available: "+String(e.message)+".";
-$("facts").append(card("Status","No active forward record confirmed"));
-$("chart").append(node("p","The forward experiment starts only after its first fresh quote is recorded. Historical results are not relabeled as forward data.","muted"));
-}
-}
-$("reload").addEventListener("click",load);$("symbol").addEventListener("change",load);load();
-</script></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="0; url=./">
+<link rel="canonical" href="./">
+<title>TACM Frontier Console</title>
+<script>location.replace("./" + location.search + location.hash);</script>
+</head>
+<body>
+<p>The forward-paper dashboard has been consolidated into the <a href="./">TACM Frontier Console</a>.</p>
+</body>
+</html>
