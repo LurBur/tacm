@@ -1,9 +1,7 @@
-name: TACM forward paper ledger (public quotes, zero orders)
+name: TACM legacy diagnostic pilot (manual only)
+# Railway v1 is the only automatic forward-paper observer.
+# Old v0.3 ledger files are preserved for audit; not official validation.
 on:
-  workflow_run:
-    workflows:
-      - TACM public crypto research snapshots
-    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -15,7 +13,6 @@ concurrency:
 
 jobs:
   observe-paper:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
