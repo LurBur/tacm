@@ -34,6 +34,14 @@ assert(html.includes("PAPER · PILOT"),"Make simulation/pilot mode clearly visib
 assert(html.includes("DIAGNOSTIC PILOT"),"Do not misstate evidence validity");
 assert(!html.includes("UI goal") && !html.includes("Best next") && !html.includes("What this means"),
        "Do not publish design commentary on the operator UI");
+assert(html.includes("wss://ws.kraken.com/v2"),"Unauthenticated public Kraken ticker socket must exist");
+assert(html.includes("event_trigger:'bbo'"),"Use public best bid/ask changes");
+assert(html.includes("PAPER QUOTE ·"),"Label historical paper quote age distinctly");
+assert(html.includes("LIVE KRAKEN · PUBLIC BID / ASK"),"Live price must identify its source");
+assert(html.includes("PAPER SCHEDULER DEGRADED"),"Display actual observer health");
+assert(html.includes("PAPER PAUSED · SCHEDULER GAP"),"Never present a gap-related halt as normal activity");
+assert(html.includes("renderPublicQuote"),"Live quote renderer must be isolated");
+assert(!html.includes("onchainTransaction"),"Live UI must not submit onchain transactions");
 assert(!html.includes("api.kraken.com/0/private"),"No private exchange order endpoints");
 assert(!html.includes("Place order"),"This interface has no real trading controls");
 assert(redirect.includes('http-equiv="refresh"') && redirect.includes("url=./"),"Keep just one live dashboard");
