@@ -22,7 +22,7 @@ for(const id of [
 assert(html.includes("background:var(--bg)") && html.includes("--bg:#050607"),"Use true black console canvas");
 assert(html.includes("grid-template-columns:repeat(6,minmax(0,1fr))"),"Six glanceable KPIs");
 assert(html.includes("grid-template-columns:minmax(0,1.7fr) minmax(310px,.81fr)"),"Chart/rail desktop grid");
-assert(html.includes("./forward/") && html.includes("./data/"),"Use forward records AND completed Kraken candles");
+assert(html.includes("OBSERVER_BASE+\'/v1/forward/\'") && html.includes("OBSERVER_BASE+\'/v1/data/\'"),"Use persistent Railway v1 forward records and completed Kraken candles");
 assert(html.includes("state.last_hash!==events.at(-1)?.hash"),"Validate journal/state checkpoint");
 assert(html.includes("events[i].prev_hash"),"Check journal continuity");
 assert(html.includes("skipped_unobserved_hours"),"Expose missing observations");
@@ -38,7 +38,9 @@ assert(html.includes("wss://ws.kraken.com/v2"),"Unauthenticated public Kraken ti
 assert(html.includes("event_trigger:'bbo'"),"Use public best bid/ask changes");
 assert(html.includes("PAPER QUOTE ·"),"Label historical paper quote age distinctly");
 assert(html.includes("LIVE KRAKEN · PUBLIC BID / ASK"),"Live price must identify its source");
-assert(html.includes("PAPER SCHEDULER DEGRADED"),"Display actual observer health");
+assert(html.includes("RAILWAY V1 / DIAGNOSTIC PILOT"),"Display prospective hosted observer and experimental validity");
+assert(html.includes("OBSERVER_BASE+\'/health\'"),"Check hosted observer health before displaying paper data");
+assert(html.includes("PAPER OBSERVER OFFLINE"),"Do not fake paper metrics when observer is down");
 assert(html.includes("PAPER PAUSED · SCHEDULER GAP"),"Never present a gap-related halt as normal activity");
 assert(html.includes("renderPublicQuote"),"Live quote renderer must be isolated");
 assert(!html.includes("onchainTransaction"),"Live UI must not submit onchain transactions");
