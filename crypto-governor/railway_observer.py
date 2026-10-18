@@ -41,7 +41,7 @@ SOURCE = "Kraken public OHLC + Ticker, forward PAPER only"
 
 
 def fetch_kraken_ohlc(symbol: str, now: datetime) -> dict:
-    """Return only COMPELTED contiguous 1h OHLCV bars (no current open bar)."""
+    """Return only COMPLETED contiguous 1h OHLCV bars (no current open bar)."""
     pair = SYMBOLS[symbol]
     request = Request(
         "https://api.kraken.com/0/public/OHLC?pair=" + pair + "&interval=60",
@@ -114,7 +114,7 @@ def observe_symbol(symbol: str, now=None,
             return "already observed completed 1-hour candle"
         snapshot = snapshot_fetcher(symbol, now)
         quote = quote_fetcher(symbol)
-        actual = datetime.now(timezone.utc)
+        actual = max(datetime.now(timezone.utc), now, utc(quote["observed_at"]))
         updated, event = advance(snapshot, quote, previous, now=actual,
                                  symbol=symbol, fee=FEE,
                                  slippage=SLIPPAGE, capital=CAPITAL)
