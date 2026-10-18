@@ -1,10 +1,10 @@
 {
   "before_last_signals": {
-    "mean_revert_z24": 0.0,
+    "mean_revert_z24": 1.0,
     "momentum_12_48": 0.0
   },
   "capital": 10000.0,
-  "events": 8,
+  "events": 9,
   "fee": 0.008,
   "governors": {
     "tacm_full": {
@@ -34,13 +34,13 @@
       ]
     }
   },
-  "last_candle_open": "2026-10-17T22:00:00+00:00",
-  "last_close": 81253.4,
-  "last_hash": "19173ebbfb46285616f377d787e234ee8c3f1af65203b62b6f4de51890e31786",
-  "last_quote_at": "2026-10-17T23:31:38.610024+00:00",
+  "last_candle_open": "2026-10-18T00:00:00+00:00",
+  "last_close": 81432.9,
+  "last_hash": "d54c13a50c19de51247db1cb864f38bcc413d3354e791f2ef1829f78b2fe39df",
+  "last_quote_at": "2026-10-18T01:30:00.528808+00:00",
   "last_signals": {
     "momentum_12_48": 0.0,
-    "mean_revert_z24": 1.0
+    "mean_revert_z24": 0.0
   },
   "mode": "FORWARD_PAPER_ONLY",
   "portfolios": {
@@ -59,7 +59,7 @@
         "max_weight": 0.1,
         "permanent_stopped": false
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
@@ -68,7 +68,7 @@
     },
     "passive_10pct": {
       "cash": 8992.0,
-      "exposure_sum": 0.7985412389055866,
+      "exposure_sum": 0.8985276376472026,
       "fees": 8.0,
       "gate": {
         "daily_halt": 0.02,
@@ -81,7 +81,7 @@
         "max_weight": 0.1,
         "permanent_stopped": false
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 1,
       "peak": 10000.0,
       "slippage": 0.4997501249375332,
@@ -90,7 +90,7 @@
     },
     "passive_3pct": {
       "cash": 9697.6,
-      "exposure_sum": 0.23937941834731588,
+      "exposure_sum": 0.26935635166034094,
       "fees": 2.4,
       "gate": {
         "daily_halt": 0.02,
@@ -103,7 +103,7 @@
         "max_weight": 0.1,
         "permanent_stopped": false
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 1,
       "peak": 10000.0,
       "slippage": 0.14992503748125996,
@@ -119,13 +119,13 @@
         "dd_halt": 0.05,
         "daily_halt": 0.02,
         "entry_cap": 3,
-        "day": "2026-10-17",
+        "day": "2026-10-18",
         "day_start_equity": 10000.0,
         "daily_stopped": false,
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
@@ -141,13 +141,13 @@
         "dd_halt": 0.05,
         "daily_halt": 0.02,
         "entry_cap": 3,
-        "day": "2026-10-17",
+        "day": "2026-10-18",
         "day_start_equity": 10000.0,
         "daily_stopped": false,
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
@@ -163,13 +163,13 @@
         "dd_halt": 0.05,
         "daily_halt": 0.02,
         "entry_cap": 3,
-        "day": "2026-10-17",
+        "day": "2026-10-18",
         "day_start_equity": 10000.0,
         "daily_stopped": false,
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
@@ -185,13 +185,13 @@
         "dd_halt": 0.05,
         "daily_halt": 0.02,
         "entry_cap": 3,
-        "day": "2026-10-17",
+        "day": "2026-10-18",
         "day_start_equity": 10000.0,
         "daily_stopped": false,
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
@@ -207,13 +207,13 @@
         "dd_halt": 0.05,
         "daily_halt": 0.02,
         "entry_cap": 3,
-        "day": "2026-10-17",
+        "day": "2026-10-18",
         "day_start_equity": 10000.0,
         "daily_stopped": false,
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,

@@ -1,10 +1,10 @@
 {
   "before_last_signals": {
-    "mean_revert_z24": 0.0,
+    "mean_revert_z24": 1.0,
     "momentum_12_48": 0.0
   },
   "capital": 10000.0,
-  "events": 8,
+  "events": 9,
   "fee": 0.008,
   "governors": {
     "tacm_full": {
@@ -34,10 +34,10 @@
       ]
     }
   },
-  "last_candle_open": "2026-10-17T22:00:00+00:00",
-  "last_close": 2390.17,
-  "last_hash": "96e1e8968e4f39c75329cab0bb20a25361b91a7f8207ccbb57ccc895663e7e48",
-  "last_quote_at": "2026-10-17T23:31:38.774482+00:00",
+  "last_candle_open": "2026-10-18T00:00:00+00:00",
+  "last_close": 2402.63,
+  "last_hash": "a828f2520a90963e312f0b4bcd0b3ea8afa338285d63ae78ee4a280a1ec7a3aa",
+  "last_quote_at": "2026-10-18T01:30:00.699804+00:00",
   "last_signals": {
     "momentum_12_48": 0.0,
     "mean_revert_z24": 1.0
@@ -59,7 +59,7 @@
         "max_weight": 0.1,
         "permanent_stopped": false
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
@@ -68,7 +68,7 @@
     },
     "passive_10pct": {
       "cash": 8992.0,
-      "exposure_sum": 0.7968124383484891,
+      "exposure_sum": 0.8962138486114748,
       "fees": 8.0,
       "gate": {
         "daily_halt": 0.02,
@@ -81,7 +81,7 @@
         "max_weight": 0.1,
         "permanent_stopped": false
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 1,
       "peak": 10000.0,
       "slippage": 0.49975012493750476,
@@ -90,7 +90,7 @@
     },
     "passive_3pct": {
       "cash": 9697.6,
-      "exposure_sum": 0.23882184957785055,
+      "exposure_sum": 0.268609840689377,
       "fees": 2.4,
       "gate": {
         "daily_halt": 0.02,
@@ -103,7 +103,7 @@
         "max_weight": 0.1,
         "permanent_stopped": false
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 1,
       "peak": 10000.0,
       "slippage": 0.14992503748125144,
@@ -119,13 +119,13 @@
         "dd_halt": 0.05,
         "daily_halt": 0.02,
         "entry_cap": 3,
-        "day": "2026-10-17",
-        "day_start_equity": 9992.414847396967,
+        "day": "2026-10-18",
+        "day_start_equity": 9983.91327583971,
         "daily_stopped": false,
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 2,
       "peak": 10000.0,
       "slippage": 0.9999565163587769,
@@ -141,13 +141,13 @@
         "dd_halt": 0.05,
         "daily_halt": 0.02,
         "entry_cap": 3,
-        "day": "2026-10-17",
-        "day_start_equity": 9997.724454219091,
+        "day": "2026-10-18",
+        "day_start_equity": 9995.173982751914,
         "daily_stopped": false,
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 2,
       "peak": 10000.0,
       "slippage": 0.29998695490763305,
@@ -163,13 +163,13 @@
         "dd_halt": 0.05,
         "daily_halt": 0.02,
         "entry_cap": 3,
-        "day": "2026-10-17",
-        "day_start_equity": 9992.414847396967,
+        "day": "2026-10-18",
+        "day_start_equity": 9983.91327583971,
         "daily_stopped": false,
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 2,
       "peak": 10000.0,
       "slippage": 0.9999565163587769,
@@ -185,13 +185,13 @@
         "dd_halt": 0.05,
         "daily_halt": 0.02,
         "entry_cap": 3,
-        "day": "2026-10-17",
-        "day_start_equity": 9997.739245266666,
+        "day": "2026-10-18",
+        "day_start_equity": 9995.205351864026,
         "daily_stopped": false,
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 2,
       "peak": 10000.0,
       "slippage": 0.2980370397007335,
@@ -207,13 +207,13 @@
         "dd_halt": 0.05,
         "daily_halt": 0.02,
         "entry_cap": 3,
-        "day": "2026-10-17",
-        "day_start_equity": 9997.549464748538,
+        "day": "2026-10-18",
+        "day_start_equity": 9994.802862025534,
         "daily_stopped": false,
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 8,
+      "observations": 9,
       "orders": 2,
       "peak": 10000.0,
       "slippage": 0.3230559517400301,
