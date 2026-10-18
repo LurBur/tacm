@@ -1,0 +1,30 @@
+name: TACM durable observer CI
+on:
+  pull_request:
+    paths:
+      - 'crypto-governor/railway_observer.py'
+      - 'crypto-governor/tests/test_railway_observer.py'
+      - 'crypto-governor/requirements.txt'
+      - 'crypto-governor/runtime.txt'
+      - 'crypto-governor/railway.json'
+      - '.github/workflows/tacm-reliable-observer-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run original and persistent observer test suite offline
+        run: python -m unittest discover -s crypto-governor/tests -v
+      - name: Verify Python entry point parses cleanly
+        run: python -m py_compile crypto-governor/railway_observer.py crypto-governor/forward_paper.py
