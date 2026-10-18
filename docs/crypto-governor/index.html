@@ -78,9 +78,68 @@ const NAMES={tacm_full:'TACM / FULL',tacm_no_tamas:'TACM / NO TAMAS',plain:'PLAI
 const COLORS={tacm_full:'#73d9e9',tacm_no_tamas:'#aea4e0',plain:'#8f9ba4',plain_3pct:'#66737d',simple_vol_guard:'#bd9e83',passive_10pct:'#b3aa7b',passive_3pct:'#857a67',cash:'#4c5960'};
 const els=id=>document.getElementById(id);const money=(n,d=2)=>Number.isFinite(n)?'$'+n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';const pct=(n,d=2)=>Number.isFinite(n)?n.toFixed(d)+'%':'—';const signed=(n,suffix='%',d=2)=>Number.isFinite(n)?(n>0?'+':'')+n.toFixed(d)+suffix:'—';const fmtTime=t=>{const d=new Date(t);return Number.isNaN(d.getTime())?'—':d.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})};const ageM=t=>Math.max(0,(Date.now()-new Date(t).getTime())/60000);const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));const ns='http://www.w3.org/2000/svg';const safeNum=n=>typeof n==='number'&&Number.isFinite(n);const namedClass=n=>n<0?'neg':n>0?'pos':'';
 let selected='BTCUSD',mode='market',loading=0,current=null,focusIndex=-1;
+// Live public market quotes are DISPLAY ONLY. They never touch the paper ledger,
+// simulated fills, TACM policy or risk gate. Paper observations are separately timestamped.
+const publicQuotes=Object.create(null);
+let publicFeed=null,feedRetry=null,feedRetryMs=2000;
 function el(tag,attrs={},text){const x=document.createElement(tag);for(const [k,v] of Object.entries(attrs))x.setAttribute(k,v);if(text!==undefined)x.textContent=String(text);return x;}
 function node(parent,tag,attrs={}){const x=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))x.setAttribute(k,String(v));parent.appendChild(x);return x;}
 function mark(id,text,cls=''){const x=els(id);x.textContent=text;x.classList.remove('pos','neg');if(cls)x.classList.add(cls);}
+function liveQuoteFor(symbol){
+  const q=publicQuotes[symbol];
+  return q && Date.now()-q.receivedAt < 30000 ? q : null;
+}
+function renderPublicQuote(){
+  const quote=liveQuoteFor(selected);
+  if(!quote)return;
+  const mid=(quote.bid+quote.ask)/2;
+  mark('kPrice',money(mid,2));
+  mark('lastPrice',money(mid,2));
+  mark('kPriceMeta','LIVE KRAKEN · PUBLIC BID / ASK');
+}
+// Kraken spot WebSocket v2 ticker: unauthenticated top-of-book, not trade execution.
+function startPublicFeed(){
+  if(typeof WebSocket==='undefined')return;
+  if(publicFeed && (publicFeed.readyState===0 || publicFeed.readyState===1))return;
+  if(feedRetry!==null){clearTimeout(feedRetry);feedRetry=null;}
+  try{
+    const socket=new WebSocket('wss://ws.kraken.com/v2');
+    publicFeed=socket;
+    socket.onopen=()=>{
+      feedRetryMs=2000;
+      socket.send(JSON.stringify({method:'subscribe',params:{
+        channel:'ticker',symbol:['BTC/USD','ETH/USD'],event_trigger:'bbo',snapshot:true
+      }}));
+    };
+    socket.onmessage=event=>{
+      let msg;
+      try{msg=JSON.parse(event.data)}catch(_){return}
+      if(msg.channel!=='ticker'||!Array.isArray(msg.data))return;
+      for(const row of msg.data){
+        const symbol=row.symbol==='BTC/USD'?'BTCUSD':row.symbol==='ETH/USD'?'ETHUSD':null;
+        const bid=Number(row.bid),ask=Number(row.ask);
+        if(!symbol||!Number.isFinite(bid)||!Number.isFinite(ask)||
+           bid<=0||ask<bid)continue;
+        const exchangeTime=Date.parse(row.timestamp);
+        if(!Number.isFinite(exchangeTime)||Math.abs(Date.now()-exchangeTime)>120000)continue;
+        publicQuotes[symbol]={bid,ask,receivedAt:Date.now()};
+      }
+      renderPublicQuote();
+    };
+    socket.onclose=()=>{
+      if(publicFeed!==socket)return;
+      publicFeed=null;
+      if(feedRetry===null){
+        feedRetry=setTimeout(()=>{feedRetry=null;startPublicFeed()},feedRetryMs);
+        feedRetryMs=Math.min(feedRetryMs*2,60000);
+      }
+    };
+    socket.onerror=()=>socket.close();
+  }catch(_){
+    if(feedRetry===null)feedRetry=setTimeout(()=>{feedRetry=null;startPublicFeed()},feedRetryMs);
+    feedRetryMs=Math.min(feedRetryMs*2,60000);
+  }
+}
 function hideWarning(){els('warning').classList.remove('show');els('warning').textContent='';}
 function showWarning(text){els('warning').textContent=text;els('warning').classList.add('show');}
 function setAsset(symbol){if(!['BTCUSD','ETHUSD'].includes(symbol))return;selected=symbol;for(const [sym,id] of [['BTCUSD','mBTC'],['ETHUSD','mETH']]){els(id).classList.toggle('active',sym===symbol);els(id).setAttribute('aria-pressed',String(sym===symbol));}load();}
@@ -89,7 +148,9 @@ async function getJSON(path){const r=await fetch(path+'?t='+Date.now(),{cache:'n
 async function getLedger(path){const r=await fetch(path+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error(path+' returned '+r.status);return (await r.text()).trim().split('\n').filter(Boolean).map(s=>JSON.parse(s));}
 function validate(state,events,snapshot){if(state?.mode!=='FORWARD_PAPER_ONLY'||state.symbol!==selected||!Array.isArray(events)||events.length===0||state.events!==events.length||state.last_hash!==events.at(-1)?.hash)throw new Error('Paper state and journal mismatch');for(let i=0;i<events.length;i++){if(events[i].symbol!==selected||events[i].number!==i+1||events[i].prev_hash!==(i===0?'GENESIS':events[i-1].hash))throw new Error('Paper audit sequence mismatch');}if(snapshot?.mode!=='market'||snapshot?.symbol!==selected||!Array.isArray(snapshot.candles)||snapshot.candles.length<50||snapshot.paper_only!==true)throw new Error('Market candle snapshot unavailable');}
 function summary(data){const {state,events,snapshot}=data,ev=events.at(-1),t=ev.decisions.tacm_full,plain=ev.decisions.plain;const eq=t.equity,ret=(eq/state.capital-1)*100,pReturn=(plain.equity/state.capital-1)*100,gaps=events.reduce((s,x)=>s+(Number(x.skipped_unobserved_hours)||0),0),coverage=events.length/(events.length+gaps)*100,mid=(ev.bid+ev.ask)/2;return {ev,t,plain,eq,ret,pReturn,gaps,coverage,mid,age:ageM(ev.quote_at)};}
-function renderSummary(d){const {state,events,snapshot}=d,{ev,t,eq,ret,pReturn,coverage,mid,age,gaps}=summary(d);mark('kPrice',money(mid,2));mark('kPriceMeta','PUBLIC BID / ASK MID');mark('kEquity',money(eq));mark('kReturn',signed(ret),namedClass(ret));mark('kDelta',signed(ret-pReturn,' pp'),namedClass(ret-pReturn));mark('kExposure',pct(t.exposure*100));mark('kCoverage',pct(coverage,1),coverage>=95?'pos':'neg');mark('kCoverageMeta',events.length+' OBS / '+gaps+' MISSED');mark('lastPrice',money(mid,2));mark('chartTitle',selected==='BTCUSD'?'BTC / USD':'ETH / USD');mark('chartTime',mode==='market'?'1H · PUBLIC MARKET':'FORWARD · PAPER');mark('eventCount',events.length+' EVENTS');mark('footObservation','QUOTE '+fmtTime(ev.quote_at)+' · CANDLE '+fmtTime(ev.candle_open));const fresh=Number.isFinite(age)&&age<=95;els('freshDot').className='status-dot'+(fresh?'':' warn');mark('freshText',fresh?('OBSERVED '+Math.round(age)+'M AGO'):('STALE '+Math.round(age)+'M'));const currentAction=String(t.action||'hold').toUpperCase();const gap=ev.skipped_unobserved_hours>0;mark('actionHeadline',gap?'GAP / FLAT':currentAction,currentAction==='buy'&&!gap?'pos':currentAction==='sell'?'neg':'');mark('actionDetail',gap?ev.skipped_unobserved_hours+' unobserved hour(s) · policy forced flat':('Requested '+pct(t.requested*100,1)+' / allowed '+pct(t.allowed*100,1)));mark('phaseDetail',(gap?'NOT EVALUATED':'LAST OBSERVED')+'\n'+fmtTime(ev.timestamp));els('phaseDetail').style.whiteSpace='pre-line';mark('decisionAt',fmtTime(ev.timestamp).toUpperCase());const fullGov=state.governors?.tacm_full;const strengths=fullGov?.prev_strengths||{};for(const s of ['Crystal','Flower','Flame']){const v=safeNum(strengths[s])?clamp(strengths[s],0,1):null;els('str'+s).style.width=(v===null?0:v*100)+'%';mark('str'+s+'V',v===null?'—':Math.round(v*100)+'%');}mark('strengthAge',gap?'PRIOR ASSESSMENT':'LAST ASSESSMENT');renderAgents(ev.signals||{});const reason=String(t.gate||'unknown');const restricted=reason.includes('halt')||reason.includes('stop')||reason.includes('missed')||reason.includes('cap')||reason.includes('pause');els('gateSymbol').classList.toggle('warn',restricted);mark('gateSymbol',restricted?'!':'✓');mark('gateLabel',restricted?'RISK / INTERVENTION':'RISK / POLICY');mark('gateDesc',reason.replaceAll('_',' ').toUpperCase());renderScore(state,ev);renderEvents(events);if(coverage<95)showWarning('DIAGNOSTIC PILOT · '+pct(coverage,1)+' observation coverage. Performance is not validated; missing hours can force simulated exits.');else hideWarning();}
+function renderSummary(d){const {state,events,snapshot}=d,{ev,t,eq,ret,pReturn,coverage,mid,age,gaps}=summary(d);mark('kPrice',money(mid,2));mark('kPriceMeta','PAPER QUOTE · '+Math.round(age)+'M OLD');mark('kEquity',money(eq));mark('kReturn',signed(ret),namedClass(ret));mark('kDelta',signed(ret-pReturn,' pp'),namedClass(ret-pReturn));mark('kExposure',pct(t.exposure*100));mark('kCoverage',pct(coverage,1),coverage>=95?'pos':'neg');mark('kCoverageMeta',events.length+' OBS / '+gaps+' MISSED');mark('lastPrice',money(mid,2));mark('chartTitle',selected==='BTCUSD'?'BTC / USD':'ETH / USD');mark('chartTime',mode==='market'?'1H · PUBLIC MARKET':'FORWARD · PAPER');mark('eventCount',events.length+' EVENTS');mark('footObservation','QUOTE '+fmtTime(ev.quote_at)+' · CANDLE '+fmtTime(ev.candle_open));const fresh=Number.isFinite(age)&&age<=95,observedGap=ev.skipped_unobserved_hours>0;
+els('freshDot').className='status-dot'+(fresh&&!observedGap?'':' warn');
+mark('freshText',observedGap?'PAPER PAUSED · SCHEDULER GAP':fresh?('PAPER OBSERVED '+Math.round(age)+'M AGO'):('PAPER STALE '+Math.round(age)+'M'));const currentAction=String(t.action||'hold').toUpperCase();const gap=ev.skipped_unobserved_hours>0;mark('actionHeadline',gap?'GAP / FLAT':currentAction,currentAction==='buy'&&!gap?'pos':currentAction==='sell'?'neg':'');mark('actionDetail',gap?ev.skipped_unobserved_hours+' unobserved hour(s) · policy forced flat':('Requested '+pct(t.requested*100,1)+' / allowed '+pct(t.allowed*100,1)));mark('phaseDetail',(gap?'NOT EVALUATED':'LAST OBSERVED')+'\n'+fmtTime(ev.timestamp));els('phaseDetail').style.whiteSpace='pre-line';mark('decisionAt',fmtTime(ev.timestamp).toUpperCase());const fullGov=state.governors?.tacm_full;const strengths=fullGov?.prev_strengths||{};for(const s of ['Crystal','Flower','Flame']){const v=safeNum(strengths[s])?clamp(strengths[s],0,1):null;els('str'+s).style.width=(v===null?0:v*100)+'%';mark('str'+s+'V',v===null?'—':Math.round(v*100)+'%');}mark('strengthAge',gap?'PRIOR ASSESSMENT':'LAST ASSESSMENT');renderAgents(ev.signals||{});const reason=String(t.gate||'unknown');const restricted=reason.includes('halt')||reason.includes('stop')||reason.includes('missed')||reason.includes('cap')||reason.includes('pause');els('gateSymbol').classList.toggle('warn',restricted);mark('gateSymbol',restricted?'!':'✓');mark('gateLabel',restricted?'RISK / INTERVENTION':'RISK / POLICY');mark('gateDesc',reason.replaceAll('_',' ').toUpperCase());renderScore(state,ev);renderEvents(events);if(coverage<95)showWarning('PAPER SCHEDULER DEGRADED · '+pct(coverage,1)+' observation coverage, '+gaps+' skipped hours. Simulated TACM decisions are suppressed after gaps. Live public prices are display-only, not paper fills.');else hideWarning();renderPublicQuote();}
 function renderAgents(signals){const root=els('agentRows');root.replaceChildren();for(const [key,label] of [['momentum_12_48','MOMENTUM / 12:48'],['mean_revert_z24','MEAN REVERT / Z24']]){const s=signals[key]||{},row=el('div',{class:'agent-row'}),left=el('div'),title=el('div',{class:'agent-title'},label),meta=el('span',{class:'agent-meta mono'},String(s.evidence||'NO SIGNAL')),conf=el('span',{class:'agent-confidence mono'},safeNum(s.confidence)?pct(s.confidence*100,0):'—'),side=el('span',{class:'side-pill'+(s.target>0?'':' flat')},s.target>0?'LONG':'FLAT');left.append(title,meta);row.append(left,conf,side);root.appendChild(row);}}
 function renderScore(state,ev){const tbody=els('scoreRows');tbody.replaceChildren();for(const [key,name] of Object.entries(NAMES)){const p=state.portfolios[key],d=ev.decisions[key];if(!p||!d)continue;const eq=safeNum(d.equity)?d.equity:NaN,ret=(eq/state.capital-1)*100,avg=p.observations?p.exposure_sum/p.observations*100:0,row=el('tr',{class:key==='tacm_full'?'focus':''});const label=el('td'),tag=el('span',{class:'strategy-name'}),dot=el('span',{class:'strat-dot'+(key.startsWith('tacm')?' supervisor':key==='cash'||key.startsWith('passive')?' reference':'')});tag.append(dot,document.createTextNode(name));label.appendChild(tag);row.append(label,el('td',{class:namedClass(ret)+' mono'},signed(ret)),el('td',{class:'mono'},money(eq)),el('td',{class:'mono'},pct(avg,1)),el('td',{class:'mono'},money(p.fees)),el('td',{class:'small-action'},String(d.action||'hold').toUpperCase()));tbody.appendChild(row);}}
 function renderEvents(events){const root=els('eventRows');root.replaceChildren();for(const evt of events.slice(-6).reverse()){const d=evt.decisions?.tacm_full||{},gap=Number(evt.skipped_unobserved_hours)||0,row=el('div',{class:'event'}),dot=el('span',{class:'evt-mark'+(gap?' gap':d.action==='buy'?' buy':d.action==='sell'?' sell':'')}),data=el('div'),action=gap?'MISSED INTERVAL':('TACM / '+String(d.action||'hold').toUpperCase()),title=el('div',{class:'evt-name'},action),detail=el('div',{class:'evt-meta mono'},gap?'GAP '+gap+'H · FORCED FLAT':'EXPOSURE '+pct((d.exposure||0)*100,1)+' · '+String(d.agent||'—')),time=el('div',{class:'evt-time mono'},fmtTime(evt.quote_at));data.append(title,detail);row.append(dot,data,time);root.appendChild(row);}}
@@ -100,7 +161,9 @@ if(mode==='market'){const width=Math.max(2,iw/values.length*.65);values.forEach(
 else{const tracks=[['plain','#7b8690'],['passive_3pct','#c6a46e'],['tacm_no_tamas','#a6a0db'],['tacm_full','#72d7e7']];for(const [key,color] of tracks){const pts=values.map((e,i)=>{const v=Number(e.decisions?.[key]?.equity);return Number.isFinite(v)?x(i)+','+y(v):null}).filter(Boolean);if(pts.length<2)continue;node(svg,'polyline',{points:pts.join(' '),stroke:color,'stroke-width':key==='tacm_full'?2.5:1.6,fill:'none',opacity:key==='tacm_full'?1:.82,'stroke-linejoin':'round'});let lastVal=Number(values.at(-1).decisions?.[key]?.equity);if(Number.isFinite(lastVal))node(svg,'circle',{cx:x(values.length-1),cy:y(lastVal),r:key==='tacm_full'?3:2,fill:color});}let offs=18;for(const [name,color] of tracks){node(svg,'line',{x1:offs,y1:22,x2:offs+15,y2:22,stroke:color,'stroke-width':2});node(svg,'text',{x:offs+20,y:25,fill:'#96a0a7','font-size':10}).textContent=name==='tacm_full'?'TACM FULL':name==='tacm_no_tamas'?'NO TAMAS':name==='passive_3pct'?'PASSIVE 3%':'PLAIN';offs+=name==='tacm_no_tamas'?112:101;}}
 }
 async function load(){const token=++loading,symbol=selected;mark('freshText','SYNCING…');try{const [state,events,snapshot]=await Promise.all([getJSON('./forward/'+symbol+'.state.json'),getLedger('./forward/'+symbol+'.ledger.jsonl'),getJSON('./data/'+symbol+'.json')]);if(token!==loading)return;validate(state,events,snapshot);current={state,events,snapshot};renderSummary(current);drawChart(current);}catch(err){if(token!==loading)return;mark('freshText','DATA UNAVAILABLE');els('freshDot').className='status-dot err';showWarning('DATA UNAVAILABLE · '+String(err.message||err)+'. No estimate was substituted.');}}
-els('mBTC').addEventListener('click',()=>setAsset('BTCUSD'));els('mETH').addEventListener('click',()=>setAsset('ETHUSD'));els('viewMarket').addEventListener('click',()=>setMode('market'));els('viewEquity').addEventListener('click',()=>setMode('equity'));els('refreshBtn').addEventListener('click',load);window.addEventListener('resize',()=>{if(current)drawChart(current);});load();setInterval(()=>{if(!document.hidden)load();},90000);
+els('mBTC').addEventListener('click',()=>setAsset('BTCUSD'));els('mETH').addEventListener('click',()=>setAsset('ETHUSD'));els('viewMarket').addEventListener('click',()=>setMode('market'));els('viewEquity').addEventListener('click',()=>setMode('equity'));els('refreshBtn').addEventListener('click',load);window.addEventListener('resize',()=>{if(current)drawChart(current);});load();startPublicFeed();
+setInterval(()=>{if(!document.hidden)load();},90000);
+setInterval(()=>{if(!liveQuoteFor(selected) && current)renderSummary(current);},15000);
 </script>
 </body>
 </html>
