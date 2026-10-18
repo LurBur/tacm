@@ -1,10 +1,10 @@
 {
   "before_last_signals": {
     "mean_revert_z24": 0.0,
-    "momentum_12_48": 0.0
+    "momentum_12_48": 1.0
   },
   "capital": 10000.0,
-  "events": 11,
+  "events": 12,
   "fee": 0.008,
   "governors": {
     "tacm_full": {
@@ -34,10 +34,10 @@
       ]
     }
   },
-  "last_candle_open": "2026-10-18T10:00:00+00:00",
-  "last_close": 81984.6,
-  "last_hash": "9e1205dc349d065c3197264543259be32474ca98c99dc8ebbfeda64a9e3dd488",
-  "last_quote_at": "2026-10-18T11:40:34.487554+00:00",
+  "last_candle_open": "2026-10-18T13:00:00+00:00",
+  "last_close": 81435.8,
+  "last_hash": "d820cedc52c2c38723be81a7e8abe24dd17c54212bdbaec3188b6594349b6d8a",
+  "last_quote_at": "2026-10-18T14:54:23.396746+00:00",
   "last_signals": {
     "momentum_12_48": 1.0,
     "mean_revert_z24": 0.0
@@ -59,7 +59,7 @@
         "max_weight": 0.1,
         "permanent_stopped": false
       },
-      "observations": 11,
+      "observations": 12,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
@@ -68,7 +68,7 @@
     },
     "passive_10pct": {
       "cash": 8992.0,
-      "exposure_sum": 1.0992104360998345,
+      "exposure_sum": 1.1986726336345976,
       "fees": 8.0,
       "gate": {
         "daily_halt": 0.02,
@@ -81,7 +81,7 @@
         "max_weight": 0.1,
         "permanent_stopped": false
       },
-      "observations": 11,
+      "observations": 12,
       "orders": 1,
       "peak": 10000.0,
       "slippage": 0.4997501249375332,
@@ -90,7 +90,7 @@
     },
     "passive_3pct": {
       "cash": 9697.6,
-      "exposure_sum": 0.3295397202162213,
+      "exposure_sum": 0.3593473366697752,
       "fees": 2.4,
       "gate": {
         "daily_halt": 0.02,
@@ -103,7 +103,7 @@
         "max_weight": 0.1,
         "permanent_stopped": false
       },
-      "observations": 11,
+      "observations": 12,
       "orders": 1,
       "peak": 10000.0,
       "slippage": 0.14992503748125996,
@@ -125,7 +125,7 @@
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 11,
+      "observations": 12,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
@@ -147,7 +147,7 @@
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 11,
+      "observations": 12,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
@@ -169,7 +169,7 @@
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 11,
+      "observations": 12,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
@@ -191,7 +191,7 @@
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 11,
+      "observations": 12,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
@@ -213,7 +213,7 @@
         "permanent_stopped": false,
         "entries": 0
       },
-      "observations": 11,
+      "observations": 12,
       "orders": 0,
       "peak": 10000.0,
       "slippage": 0.0,
